@@ -1,0 +1,12 @@
+﻿using System.Text.Json.Serialization;
+
+namespace Flights.Domain.Models;
+
+public class Airline
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string? IconUrl { get; set; }
+    public double Сoefficient { get; set; }
+    public ICollection<Airplane> Airplanes { get; set; }
+}
