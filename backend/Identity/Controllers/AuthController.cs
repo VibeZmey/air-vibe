@@ -1,6 +1,6 @@
 ﻿using Identity.Dto;
-using Identity.Exceptions;
-using Identity.Services;
+using Identity.Services.JwtService;
+using Identity.Services.UserService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,10 +11,10 @@ namespace Identity.Controllers;
 [Route("auth")]
 public class AuthController : ControllerBase
 {
-    private readonly UserService _userService;
-    private readonly JwtService _jwtService;
+    private readonly IUserService _userService;
+    private readonly IJwtService _jwtService;
     
-    public AuthController(UserService userService, JwtService jwtService)
+    public AuthController(IUserService userService, IJwtService jwtService)
     {
         _userService = userService;
         _jwtService = jwtService;

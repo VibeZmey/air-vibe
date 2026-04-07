@@ -1,5 +1,6 @@
-﻿using System.Text;
-using Identity.Objects;
+﻿using System.Security.Cryptography;
+using System.Text;
+using Identity.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -9,9 +10,15 @@ public static class Extension
 {
     public static void AddApiAuthentication(
         this IServiceCollection services, 
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IWebHostEnvironment env)
     {
         var jwtOptions = configuration.GetSection(nameof(JwtOptions)).Get<JwtOptions>();
+        var keyPath = Path.Combine(env.ContentRootPath, jwtOptions.PublicKeyPath);
+        var publicKeyBytes = File.ReadAllText(keyPath);
+        var rsaPublicKey = RSA.Create();
+        rsaPublicKey.ImportFromPem(publicKeyBytes);
+        services.AddSingleton(rsaPublicKey);
         
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
@@ -23,8 +30,7 @@ public static class Extension
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
                     ClockSkew = TimeSpan.Zero,
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtOptions.SecretKey)),
+                    IssuerSigningKey = new RsaSecurityKey(rsaPublicKey),
                 };
             });
         
