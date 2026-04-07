@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: flights
+    ports:
+      - "15432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d flights"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  flights:
+    build: ./backend/Flights
+    ports:
+      - "8082:8080"
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=flights;Username=postgres;Password=1234"
+      ConnectionStrings_Redis: "redis:6379"
+      Encryption__Key: "MGY7McJ5MLGqLu7F2gptcZwP+8nfD9fBC3kG4VeOAjM="
+      JwtOptions__PublicKeyPath: "Keys/public_key.pem"
+      JwtOptions__TokenValidityMins: "2000"
+    volumes:
+      - ./backend/Flights/Keys:/app/Keys:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+
+  identity:
+    build: ./backend/Identity
+    ports:
+      - "8081:8080"
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=identity;Username=postgres;Password=1234"
+      JwtOptions__PublicKeyPath: "Keys/public_key.pem"
+      JwtOptions__PrivateKeyPath: "Keys/private_key.pem"
+      JwtOptions__TokenValidityMins: "2000"
+      JwtOptions__RefreshTokenValidityMins: "2000"
+    volumes:
+      - ./backend/Identity/Keys:/app/Keys:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok
+    command:
+      - "http"
+      - "http://flights:8080"
+      - "--authtoken=33ThgsAijz1V5tGKN24iuEp4Phg_3YLVpxNQrhZmf7hqQzk4a"
+    ports:
+      - "4040:4040"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
