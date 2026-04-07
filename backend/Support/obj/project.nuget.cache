@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "+CFwt2LC2Bw=",
+  "dgSpecHash": "bySfG8kHVeY=",
   "success": true,
   "projectFilePath": "C:\\Users\\IDIotSUda\\source\\repos\\air-vibe\\backend\\Support\\Support.csproj",
   "expectedPackageFiles": [
@@ -9,29 +9,9 @@
     "C:\\Users\\IDIotSUda\\.nuget\\packages\\microsoft.entityframeworkcore.abstractions\\10.0.4\\microsoft.entityframeworkcore.abstractions.10.0.4.nupkg.sha512",
     "C:\\Users\\IDIotSUda\\.nuget\\packages\\microsoft.entityframeworkcore.analyzers\\10.0.4\\microsoft.entityframeworkcore.analyzers.10.0.4.nupkg.sha512",
     "C:\\Users\\IDIotSUda\\.nuget\\packages\\microsoft.entityframeworkcore.relational\\10.0.4\\microsoft.entityframeworkcore.relational.10.0.4.nupkg.sha512",
-    "C:\\Users\\IDIotSUda\\.nuget\\packages\\microsoft.extensions.caching.abstractions\\10.0.4\\microsoft.extensions.caching.abstractions.10.0.4.nupkg.sha512",
-    "C:\\Users\\IDIotSUda\\.nuget\\packages\\microsoft.extensions.caching.memory\\10.0.4\\microsoft.extensions.caching.memory.10.0.4.nupkg.sha512",
-    "C:\\Users\\IDIotSUda\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\10.0.4\\microsoft.extensions.configuration.abstractions.10.0.4.nupkg.sha512",
-    "C:\\Users\\IDIotSUda\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\10.0.4\\microsoft.extensions.dependencyinjection.10.0.4.nupkg.sha512",
-    "C:\\Users\\IDIotSUda\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\10.0.4\\microsoft.extensions.dependencyinjection.abstractions.10.0.4.nupkg.sha512",
-    "C:\\Users\\IDIotSUda\\.nuget\\packages\\microsoft.extensions.logging\\10.0.4\\microsoft.extensions.logging.10.0.4.nupkg.sha512",
-    "C:\\Users\\IDIotSUda\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\10.0.4\\microsoft.extensions.logging.abstractions.10.0.4.nupkg.sha512",
-    "C:\\Users\\IDIotSUda\\.nuget\\packages\\microsoft.extensions.options\\10.0.4\\microsoft.extensions.options.10.0.4.nupkg.sha512",
-    "C:\\Users\\IDIotSUda\\.nuget\\packages\\microsoft.extensions.primitives\\10.0.4\\microsoft.extensions.primitives.10.0.4.nupkg.sha512",
     "C:\\Users\\IDIotSUda\\.nuget\\packages\\microsoft.openapi\\2.0.0\\microsoft.openapi.2.0.0.nupkg.sha512",
     "C:\\Users\\IDIotSUda\\.nuget\\packages\\npgsql\\10.0.2\\npgsql.10.0.2.nupkg.sha512",
-    "C:\\Users\\IDIotSUda\\.nuget\\packages\\npgsql.entityframeworkcore.postgresql\\10.0.1\\npgsql.entityframeworkcore.postgresql.10.0.1.nupkg.sha512",
-    "C:\\Users\\IDIotSUda\\.nuget\\packages\\system.text.json\\8.0.5\\system.text.json.8.0.5.nupkg.sha512"
+    "C:\\Users\\IDIotSUda\\.nuget\\packages\\npgsql.entityframeworkcore.postgresql\\10.0.1\\npgsql.entityframeworkcore.postgresql.10.0.1.nupkg.sha512"
   ],
-  "logs": [
-    {
-      "code": "NU1900",
-      "level": "Warning",
-      "message": "Error occurred while getting package vulnerability data: Unable to load the service index for source https://api.nuget.org/v3/index.json.",
-      "projectPath": "C:\\Users\\IDIotSUda\\source\\repos\\air-vibe\\backend\\Support\\Support.csproj",
-      "warningLevel": 1,
-      "filePath": "C:\\Users\\IDIotSUda\\source\\repos\\air-vibe\\backend\\Support\\Support.csproj",
-      "targetGraphs": []
-    }
-  ]
+  "logs": []
 }

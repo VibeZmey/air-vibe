@@ -1,7 +1,11 @@
+using System.Security.Cryptography;
 using Identity;
 using Identity.Data;
-using Identity.Objects;
+using Identity.Data.Context;
+using Identity.Options;
 using Identity.Services;
+using Identity.Services.JwtService;
+using Identity.Services.UserService;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +13,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<IdentityDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<IIdentityDbContext>(provider => 
+    provider.GetRequiredService<IdentityDbContext>());
+
 builder.Services.AddControllers();
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("JwtOptions"));
 builder.Services.AddCors(options =>
@@ -20,11 +27,13 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader();
     });
 });
-builder.Services.AddScoped<UserService>();
-builder.Services.AddScoped<JwtService>();
-builder.Services.AddApiAuthentication(builder.Configuration);
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddApiAuthentication(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
+var rsaKey = app.Services.GetRequiredService<RSA>();
+app.Lifetime.ApplicationStopping.Register(() => rsaKey.Dispose());
 
 using (var scope = app.Services.CreateScope())
 {
@@ -42,10 +51,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
 
 app.UseCors("AllowAll");
 app.UseAuthentication();
