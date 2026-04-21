@@ -1,4 +1,6 @@
-﻿using Flights.Application.Features.Flights;
+﻿using Flights.Application.Common;
+using Flights.Application.Common.Interfaces;
+using Flights.Application.Features.Flights;
 using Flights.Domain.Dto;
 using Flights.Domain.Interfaces;
 using Flights.Domain.Models;
@@ -10,27 +12,50 @@ namespace Flights.Infrastructure.Repositories;
 public class FlightRepository : IFlightRepository
 {
     private readonly FlightsDbContext _context;
+    private readonly ICacheService _cacheService;
 
-    public FlightRepository(FlightsDbContext context)
+    public FlightRepository(
+        FlightsDbContext context,
+        ICacheService cacheService)
     {
+        _cacheService = cacheService;
         _context = context;
     }
     
     public async Task<IReadOnlyCollection<GetFlightsByFilterDto>> GetFlightsByFilter(SearchFlightsQuery query, CancellationToken ct = default)
     {
-        var originAirports = await _context.Airports
-            .Where(a => 
-                a.City == query.OriginCity)
-            .Select(a => a.Id)
-            .ToListAsync(ct);
+        var originAirports = await _cacheService.GetAsync<List<int>>
+            (CacheKeys.AirportsByCityKey(query.OriginCity), ct);
         
-        var destAirports = await _context.Airports
-            .Where(a => 
-                a.City == query.DestinationCity)
-            .Select(a => a.Id)
-            .ToListAsync(ct);
+        if (originAirports is null || originAirports.Count == 0)
+        {
+            originAirports = await _context.Airports
+                .Where(a => 
+                    a.City == query.OriginCity)
+                .Select(a => a.Id)
+                .ToListAsync(ct);
+            await _cacheService.SetAsync(
+                CacheKeys.AirportsByCityKey(query.OriginCity), 
+                originAirports, TimeSpan.FromHours(24), ct);
+        }
         
-        if (!originAirports.Any() || !destAirports.Any()) return Array.Empty<GetFlightsByFilterDto>();
+        var destAirports = await _cacheService.GetAsync<List<int>>
+            (CacheKeys.AirportsByCityKey(query.DestinationCity), ct);
+        
+        if (destAirports is null || destAirports.Count == 0)
+        {
+            destAirports = await _context.Airports
+                .Where(a => 
+                    a.City == query.DestinationCity)
+                .Select(a => a.Id)
+                .ToListAsync(ct);
+            await _cacheService.SetAsync(
+                CacheKeys.AirportsByCityKey(query.DestinationCity), 
+                destAirports, TimeSpan.FromHours(24), ct);
+        }
+        
+        if (originAirports.Count == 0 || destAirports.Count == 0) 
+            return Array.Empty<GetFlightsByFilterDto>();
         
         var baseQuery = _context.Flights.AsNoTracking()
             .Where(f => 
@@ -38,9 +63,10 @@ public class FlightRepository : IFlightRepository
                 destAirports.Contains(f.ToAirportId))
             .Where(f => f.Status == FlightStatus.Scheduled)
             .Include(f => f.ToAirport)
-            .Include(f => f.FromAirport);
+            .Include(f => f.FromAirport)
+            .Include(f => f.Airplane.Airline);
 
-        int totalPassengers = query.Adults + query.Kids;
+        var totalPassengers = query.Adults + query.Kids;
         
         var outboundQuery = baseQuery
             .Where(f =>
@@ -83,7 +109,8 @@ public class FlightRepository : IFlightRepository
                     originAirports.Contains(f.ToAirportId))
                 .Where(f => f.Status == FlightStatus.Scheduled)
                 .Include(f => f.ToAirport)
-                .Include(f => f.FromAirport);
+                .Include(f => f.FromAirport)
+                .Include(f => f.Airplane.Airline);
 
             returnFlights = await returnBaseQuery
                 .Where(f => f.DepartureTime.Date == query.ReturnDate.Value.Date)
@@ -95,45 +122,88 @@ public class FlightRepository : IFlightRepository
 
         foreach (var outFlight in outboundFlights)
         {
-            if (query.ReturnDate.HasValue && returnFlights.Any())
+            if (query.ReturnDate.HasValue && returnFlights is not null && returnFlights.Count != 0)
             {
                 foreach (var retFlight in returnFlights)
                 {
                     var outboundFlight = Flight.ToFlightSegment(outFlight);
                     var returnFlight = Flight.ToFlightSegment(retFlight);
+                    
+                    var outboundPrice = query.IsBusinessOnly ?
+                        outboundFlight.FlightPrice + outboundFlight.BusinessPrice :
+                        outboundFlight.FlightPrice;
+                    
+                    var returnPrice = query.IsBusinessOnly ?
+                        returnFlight.FlightPrice + returnFlight.BusinessPrice :
+                        returnFlight.FlightPrice;
+                    
+                    var totalPrice = (outboundPrice + returnPrice)*query.Adults +
+                                 (outboundPrice + returnPrice)*query.Kids/2;
+                    
                     result.Add(new GetFlightsByFilterDto
                     {
                         Outbound = outboundFlight,
                         Return = returnFlight,
-                        TotalPrice = (query.IsBusinessOnly ? 
-                            (outboundFlight.FlightPrice + outboundFlight.BusinessPrice + 
-                             returnFlight.FlightPrice + returnFlight.BusinessPrice)*totalPassengers :
-                            outboundFlight.FlightPrice*totalPassengers)
+                        TotalPrice = totalPrice
                     });
                 }
             }
             else
             {
                 var outboundFlight = Flight.ToFlightSegment(outFlight);
+                
+                var outboundPrice = query.IsBusinessOnly ?
+                    outboundFlight.FlightPrice + outboundFlight.BusinessPrice :
+                    outboundFlight.FlightPrice;
+                
+                var totalPrice = outboundPrice*query.Adults +
+                                 outboundPrice*query.Kids/2;
+                
                 result.Add(new GetFlightsByFilterDto
                 {
                     Outbound = Flight.ToFlightSegment(outFlight),
                     Return = null,
-                    TotalPrice = (query.IsBusinessOnly ? 
-                        (outboundFlight.FlightPrice + outboundFlight.BusinessPrice)*totalPassengers :
-                        outboundFlight.FlightPrice*totalPassengers)
+                    TotalPrice = totalPrice
                 });
             }
         }
-
+        
+        result = query.SortBy switch
+        {
+            FlightSortField.Price => query.SortDirection == SortDirection.Ascending
+                ? result.OrderBy(f => f.TotalPrice).ToList()
+                : result.OrderByDescending(f => f.TotalPrice).ToList(),
+                
+            FlightSortField.DepartureTime => query.SortDirection == SortDirection.Ascending
+                ? result.OrderBy(f => f.Outbound.DepartureTime).ToList()
+                : result.OrderByDescending(f => f.Outbound.DepartureTime).ToList(),
+                
+            FlightSortField.ArrivalTime => query.SortDirection == SortDirection.Ascending
+                ? result.OrderBy(f => f.Outbound.ArrivalTime).ToList()
+                : result.OrderByDescending(f => f.Outbound.ArrivalTime).ToList(),
+                
+            FlightSortField.Duration => query.SortDirection == SortDirection.Ascending
+                ? result.OrderBy(f => f.Outbound.DurationMins).ToList()
+                : result.OrderByDescending(f => f.Outbound.DurationMins).ToList(),
+                
+            _ => result.OrderBy(f => f.TotalPrice).ToList()
+        };
+        
         return result
             .Skip((query.PageNumber - 1) * query.PageSize)
             .Take(query.PageSize)
             .ToList();
     }
 
-    public async Task<Flight?> GetByIdAsync(Guid flightId, CancellationToken ct = default)
+    public async Task<Flight?> GetByIdWithDetailsAsync(Guid flightId, CancellationToken ct = default)
     {
-        return await _context.Flights.Include(f=>f.Airplane).FirstOrDefaultAsync(f => f.Id == flightId, ct);
+        return await _context
+            .Flights
+            .Include(f => f.Airplane)
+            .Include(f => f.ToAirport)
+            .Include(f => f.FromAirport)
+            .Include(f => f.Bookings)
+            .FirstOrDefaultAsync(f => f.Id == flightId, ct);
     }
+    
 }

@@ -10,6 +10,9 @@ public class AirplaneConfiguration : IEntityTypeConfiguration<Airplane>
     {
         builder.HasKey(a => a.Id);
         
+        builder.Property(f => f.TotalSeats)
+            .HasComputedColumnSql($"\"Rows\" * \"Columns\"", stored: true);
+        
         builder
             .HasOne(a => a.Airline)
             .WithMany(a => a.Airplanes)

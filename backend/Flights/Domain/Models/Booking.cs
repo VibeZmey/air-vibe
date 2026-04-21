@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+﻿using Flights.Domain.Dto;
 using Flights.Domain.Exceptions;
 
 namespace Flights.Domain.Models;
@@ -12,7 +12,6 @@ public class Booking
     public string SeatNumber { get; private set; }
     public Guid FlightId { get; private set; }
     public Flight Flight { get; private set; }
-    
     public bool HasLuggage { get; private set; } = false;
     public bool HasFood { get; private set; } = false;
     public bool IsBusiness { get; private set; } = false;
@@ -20,17 +19,37 @@ public class Booking
     public BookingStatus Status { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
+    private Booking(){}
+
+    public static BookingDto ToDto(Booking booking)
+    {
+        //TODO: написал что то странное, если что пидумать как пофиксить, не придумал как грамотно сделать вывод имени в дто если у пассажира много документов но в моей теории они все передаются туда куда он летит, мб фикс мб нет
+        var document = booking.Passenger.Documents.FirstOrDefault();
+        if(document == null)
+            throw new DomainException("Passenger does not have the necessary documents");
+            
+        return new BookingDto()
+        {
+            Id = booking.Id,
+            FirstName = document.FirstName,
+            LastName = document.LastName,
+            MiddleName = document.MiddleName,
+            SeatNumber = booking.SeatNumber,
+            Flight = Flight.ToFlightForBooking(booking.Flight),
+            HasLuggage = booking.HasLuggage,
+            HasFood = booking.HasFood,
+            IsBusiness = booking.IsBusiness,
+            TotalPrice = booking.TotalPrice,
+            Status = booking.Status,
+            CreatedAt = booking.CreatedAt,
+        };
+    }
     public static Booking Create(
         Guid userId,
         Passenger passenger,
         string seatNumber,
         Flight flight)
     {
-        if(flight is null)
-            throw new DomainException("Flight not found");
-        if(passenger is null)
-            throw new DomainException("Passenger not found");
-
         decimal price = flight.FlightPrice;
         switch (passenger.Type)
         {
@@ -44,7 +63,10 @@ public class Booking
         
         return new Booking
         {
-            Id = Guid.NewGuid(),
+            // В этом месте стоит Guid.Empty потому что иначе ef определяет
+            // эту сущность как существующую и при ее добавлении создает
+            // UPDATE запрос, а не INSERT
+            Id = Guid.Empty,
             UserId = userId,
             PassengerId = passenger.Id,
             FlightId = flight.Id,
@@ -97,11 +119,11 @@ public class Booking
         }
     }
 
-    public void ConfirmPayment()
+    public void Confirm()
     {
         if (Status != BookingStatus.Pending)
             throw new DomainException("Reservation has already been processed");
-
+        
         Status = BookingStatus.Confirmed;
     }
 
@@ -109,10 +131,10 @@ public class Booking
     {
         if (Status == BookingStatus.Cancelled)
             throw new DomainException("Already canceled");
-            
-        if (Status == BookingStatus.FlightDeparted)
-            throw new DomainException("The flight has already departed");
-
+        
+        if (Status == BookingStatus.Departed)
+            throw new DomainException("Flight departed");
+        
         Status = BookingStatus.Cancelled;
     }
 }
@@ -122,5 +144,6 @@ public enum BookingStatus
     Pending,
     Confirmed,
     Cancelled,
-    FlightDeparted
+    Expired,
+    Departed
 }

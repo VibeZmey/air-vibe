@@ -1,4 +1,5 @@
-﻿using Flights.Domain.Interfaces;
+﻿using Flights.Application.Common.Interfaces;
+using Flights.Domain.Interfaces;
 using Flights.Infrastructure.Persistence;
 using Flights.Infrastructure.Repositories;
 using Flights.Infrastructure.Services;
@@ -14,11 +15,18 @@ public static class DependencyInjection
     {
         services.AddDbContext<FlightsDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = configuration.GetConnectionString("Redis");
+        });
+        services.AddScoped<ICacheService, CacheService>();
         services.AddScoped<IDocumentRepository, DocumentRepository>();
         services.AddScoped<IPassengerRepository, PassengerRepository>();
         services.AddScoped<IEncryptionService, EncryptionService>();
         services.AddScoped<IFlightRepository, FlightRepository>();
+        services.AddScoped<IBookingRepository, BookingRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        
         return services;
     }
 }

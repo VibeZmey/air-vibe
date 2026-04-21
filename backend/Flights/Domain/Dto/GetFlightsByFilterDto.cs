@@ -15,8 +15,9 @@ public record FlightSegment
     public int DurationMins { get; set; }
     public decimal FlightPrice { get; set; }
     public decimal BusinessPrice { get; set; }
-    public AirportDto AirportFrom { get; set; }
-    public AirportDto AirportTo { get; set; }
+    public string AirlineName { get; set; }
+    public AirportDto FromAirport { get; set; }
+    public AirportDto ToAirport { get; set; }
 }
 
 public record SearchFlightsQuery
@@ -37,8 +38,22 @@ public record SearchFlightsQuery
     public int? DepartureHourTo { get; init; } 
     
     public Guid? AirlineId { get; init; }
-    
     public bool IsBusinessOnly { get; init; }
+    public FlightSortField SortBy { get; init; } = FlightSortField.Price;
+    public SortDirection SortDirection { get; init; } = SortDirection.Ascending;
     public int PageSize { get; init; }
     public int PageNumber { get; init; }
+}
+public enum FlightSortField
+{
+    Price,
+    DepartureTime,
+    ArrivalTime,
+    Duration
+}
+
+public enum SortDirection
+{
+    Ascending,
+    Descending
 }

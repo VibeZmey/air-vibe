@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using Flights.Application.Features.Flights.GetFlightsByFilter;
+using FluentValidation;
 
 namespace Flights.Application.Features.Flights;
 

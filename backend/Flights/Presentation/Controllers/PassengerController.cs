@@ -1,4 +1,5 @@
 ﻿using Flights.Application.Features.Passengers.CreatePassenger;
+using Flights.Application.Features.Passengers.DeletePassenger;
 using Flights.Application.Features.Passengers.GetPassengersWithDocumentsByUserId;
 using Flights.Domain.Dto;
 using MediatR;
@@ -31,7 +32,18 @@ public class PassengerController : ControllerBase
             cancellationToken);
         return Ok(res);
     }
-    
+
+    [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin, User, Supporter")]
+    public async Task<IActionResult> DeletePassenger([FromRoute] Guid id, CancellationToken cancellationToken)
+    {
+        var command = new DeletePassengerCommand()
+        {
+            PassengerId = id
+        };
+        await _mediator.Send(command, cancellationToken);
+        return Ok();
+    }
     
     [HttpPost]
     public async Task<ActionResult<CreatePassengerDto>> CreatePassenger([FromBody] CreatePassengerCommand passenger)

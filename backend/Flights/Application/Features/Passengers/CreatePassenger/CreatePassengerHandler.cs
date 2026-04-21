@@ -21,7 +21,7 @@ public class CreatePassengerHandler
     {
         var pas = Passenger.Create(
             request.UserId,
-            request.Type,
+            request.IsSaved,
             request.Email,
             request.PhoneNumber);
         

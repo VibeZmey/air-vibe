@@ -9,10 +9,8 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
     public void Configure(EntityTypeBuilder<Booking> builder)
     {
         builder
-            .HasIndex(b => 
-                new { b.FlightId, b.SeatNumber }) 
-            .IsUnique()
-            .HasDatabaseName("IX_Flight_Seat");  
+            .HasIndex(b => b.FlightId) 
+            .HasDatabaseName("IX_Flight");  
         
         builder.HasKey(b => b.Id);
     }

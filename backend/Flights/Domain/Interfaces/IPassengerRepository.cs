@@ -12,4 +12,6 @@ public interface IPassengerRepository
     Task<Passenger?> GetByIdAsync(Guid passengerId, CancellationToken ct = default);
     Task<IReadOnlyCollection<PassengerWithDocumentsDto>> GetPassengersWithDocumentsByUserId(Guid userId,
         CancellationToken ct = default);
+
+    Task<Passenger?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default);
 }

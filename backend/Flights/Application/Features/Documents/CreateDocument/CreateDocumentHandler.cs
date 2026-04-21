@@ -9,18 +9,26 @@ public class CreateDocumentHandler : IRequestHandler<CreateDocumentCommand, Crea
     private readonly IEncryptionService _encryptionService;
     private readonly IDocumentRepository _documentRepo;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IPassengerRepository _passengerRepo;
     
     public CreateDocumentHandler(
         IEncryptionService encryptionService, 
         IDocumentRepository documentRepo,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IPassengerRepository passengerRepo)
     {
         _encryptionService = encryptionService;
         _documentRepo = documentRepo;
         _unitOfWork = unitOfWork;
+        _passengerRepo = passengerRepo;
     }
     public async Task<CreateDocumentDto> Handle(CreateDocumentCommand request, CancellationToken cancellationToken)
     {
+        var passenger = await _passengerRepo
+            .GetByIdWithDetailsAsync(request.PassengerId, cancellationToken);
+        if (passenger is null)
+            throw new ApplicationException($"Passenger not found");
+        
         var document = Document.Create(
             request.Type, 
             request.FirstName,
@@ -40,9 +48,8 @@ public class CreateDocumentHandler : IRequestHandler<CreateDocumentCommand, Crea
         var encryptedNumber = _encryptionService.Encrypt(document.Number);
         document.SetEncryptedData(encryptedNumber, encryptedSeries);
         
-        await _documentRepo.AddAsync(document, cancellationToken);
+        passenger.AddDocument(document);
         await _unitOfWork.SaveAsync(cancellationToken);
-        //TODO: переделать всё нахуй строки енамы вперед!!!!!!!
         return CreateDocumentDto.Map(document);
     }
 }

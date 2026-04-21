@@ -1,8 +1,10 @@
 using System.Security.Cryptography;
 using Flights;
 using Flights.Application;
+using Flights.Domain.Exceptions;
 using Flights.Infrastructure;
 using Flights.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 
@@ -22,8 +24,7 @@ builder.Services.AddSwaggerGen(options =>
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
         BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Введите JWT токен в формате: Bearer {token}"
+        In = ParameterLocation.Header
     });
 
     options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
@@ -49,10 +50,6 @@ builder.Services.AddControllers();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 
-builder.Services.AddStackExchangeRedisCache(options =>
-{
-    options.Configuration = builder.Configuration.GetConnectionString("Redis");
-});
 
 var app = builder.Build();
 var rsaKey = app.Services.GetRequiredService<RSA>();
@@ -72,7 +69,29 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "An error occurred seeding the DB.");
     }
 }
-
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var exceptionHandlerPathFeature = context
+            .Features.Get<IExceptionHandlerPathFeature>();
+        
+        var exception = exceptionHandlerPathFeature?.Error;
+        //TODO: подумать как лучше обрабатывать ошибки
+        if (exception is ApplicationException or DomainException)
+        {
+            context.Response.StatusCode = 400;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new { message = exception.Message });
+        }
+        else
+        {
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new { message = exception.Message });
+        }
+    });
+});
 app.UseSwagger();
 app.UseSwaggerUI();
 

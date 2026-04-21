@@ -8,6 +8,6 @@ public class DocumentConfiguration : IEntityTypeConfiguration<Document>
 {
     public void Configure(EntityTypeBuilder<Document> builder)
     {
-        builder.HasKey(x => x.Id);
+        builder.HasKey(x => new {x.Id, x.Series, x.Number});
     }
 }

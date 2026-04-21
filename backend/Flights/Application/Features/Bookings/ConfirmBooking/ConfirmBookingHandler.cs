@@ -4,7 +4,7 @@ using MediatR;
 
 namespace Flights.Application.Features.Bookings.ConfirmBooking;
 
-public class ConfirmBookingHandler : IRequestHandler<ConfirmBookingCommand, Booking>
+public class ConfirmBookingHandler : IRequestHandler<ConfirmBookingCommand, Unit>
 {
     private readonly IBookingRepository _bookingRepo;
     private readonly IFlightRepository _flightRepo;
@@ -19,19 +19,14 @@ public class ConfirmBookingHandler : IRequestHandler<ConfirmBookingCommand, Book
         _unitOfWork = unitOfWork;
     }
     
-    public async Task<Booking> Handle(ConfirmBookingCommand request, CancellationToken cancellationToken)
+    public async Task<Unit> Handle(ConfirmBookingCommand request, CancellationToken cancellationToken)
     {
         var booking = await _bookingRepo.GetByIdAsync(request.BookingId, cancellationToken);
         if (booking is null)
             throw new ApplicationException("Booking not found");
         
-        var flight = await _flightRepo.GetByIdAsync(booking.FlightId, cancellationToken);
-        if (flight is null)
-            throw new ApplicationException("Flight not found");
-        
-        booking.ConfirmPayment();
-        await _bookingRepo.AddAsync(booking, cancellationToken);
+        booking.Confirm();
         await _unitOfWork.SaveAsync(cancellationToken);
-        return booking;
+        return Unit.Value;
     }
 }

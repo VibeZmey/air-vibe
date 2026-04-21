@@ -75,6 +75,11 @@ namespace Flights.Migrations
                     b.Property<int>("SpacePlusRow")
                         .HasColumnType("integer");
 
+                    b.Property<int>("TotalSeats")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("integer")
+                        .HasComputedColumnSql("\"Rows\" * \"Columns\"", true);
+
                     b.HasKey("Id");
 
                     b.HasIndex("AirlineId");
@@ -161,11 +166,10 @@ namespace Flights.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PassengerId");
+                    b.HasIndex("FlightId")
+                        .HasDatabaseName("IX_Flight");
 
-                    b.HasIndex("FlightId", "SeatNumber")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Flight_Seat");
+                    b.HasIndex("PassengerId");
 
                     b.ToTable("Bookings");
                 });
@@ -290,6 +294,9 @@ namespace Flights.Migrations
 
                     b.Property<string>("Email")
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsSaved")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("PhoneNumber")
                         .HasColumnType("text");

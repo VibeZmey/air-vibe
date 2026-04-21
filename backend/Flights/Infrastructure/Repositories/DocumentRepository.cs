@@ -25,6 +25,12 @@ public class DocumentRepository : IDocumentRepository
         _context.Documents.Remove(document);
     }
 
+    public async Task<Document?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    {
+        return await _context.Documents
+            .FirstOrDefaultAsync(d => d.Id == id, ct);
+    }
+
     public void Update(Document document)
     {
         var doc = _context

@@ -31,26 +31,83 @@ public class Flight
     public Airplane Airplane { get; set; }
     
     public ICollection<Booking> Bookings { get; set; }
+    
+    public static FlightDto ToDto(Flight flight)
+    {
+        return new FlightDto()
+        {
+            Id = flight.Id,
+            DurationMins = flight.DurationMins,
+            DepartureTime = flight.DepartureTime,
+            ArrivalTime = flight.ArrivalTime,
+            TotalSeats = flight.TotalSeats,
+            BookedSeats = flight.BookedSeats,
+            BusinessSeats = flight.BusinessSeats,
+            BookedBusinessSeats = flight.BookedBusinessSeats,
+            FlightPrice = flight.FlightPrice,
+            LuggagePrice = flight.LuggagePrice,
+            BusinessPrice = flight.BusinessPrice,
+            FoodPrice = flight.FoodPrice,
+            Status = flight.Status,
+            FromAirport = new AirportDto()
+            {
+                City = flight.FromAirport.City,
+                CountryName = flight.FromAirport.CountryName,
+                Code = flight.FromAirport.Code,
+            },
+            ToAirport = new AirportDto()
+            {
+                City = flight.ToAirport.City,
+                CountryName = flight.ToAirport.CountryName,
+                Code = flight.ToAirport.Code,
+            },
+            Airplane = new AirplaneDto()
+            {
+                BuisnessColumns = flight.Airplane.BuisnessColumns,
+                BuisnessRows = flight.Airplane.BuisnessRows,
+                Columns = flight.Airplane.Columns,
+                Rows = flight.Airplane.Rows,
+                Name = flight.Airplane.Name,
+                SpacePlusRow = flight.Airplane.SpacePlusRow,
+                AirlineId = flight.Airplane.AirlineId
+            },
+            Bookings = flight.Bookings.Select(b => b.SeatNumber).ToList()
+        };
+    }
 
     public void AddBooking(Booking booking)
     {
-        if (Status != FlightStatus.Scheduled || Status != FlightStatus.CheckIn)
+        if(Bookings.Any(b => b.SeatNumber == booking.SeatNumber && 
+                             (b.Status == BookingStatus.Confirmed || b.Status == BookingStatus.Pending)))
+            throw new ApplicationException("This seat is already in bookings");
+        
+        if (Status != FlightStatus.Scheduled && Status != FlightStatus.CheckIn)
             throw new ApplicationException("Cannot add booking when Status is not Scheduled");
-        
-        if(booking.Status != BookingStatus.Confirmed)
-            throw new ApplicationException("Cannot add booking when Status is not Confirmed");
-        
-        if(BookedSeats == TotalSeats)
-            throw new ApplicationException("Cannot add booking when the plane is full");
-
-        if (booking.IsBusiness)
+        Console.WriteLine("BEFORE ADD BOOKING");
+        Bookings.Add(booking);
+    }
+    public static FlightForBookingDto ToFlightForBooking(Flight flight)
+    {
+        return new FlightForBookingDto()
         {
-            if(BookedBusinessSeats == BusinessSeats)
-                throw new ApplicationException("Cannot add booking when the business is full");
-            BookedBusinessSeats++;
-        }
-            
-        BookedSeats++;
+            Id = flight.Id,
+            DepartureTime = flight.DepartureTime,
+            ArrivalTime = flight.ArrivalTime,
+            DurationMins = flight.DurationMins,
+            AirlineName = flight.Airplane.Airline.Name,
+            FromAirport = new AirportDto()
+            {
+                City = flight.FromAirport.City,
+                CountryName = flight.FromAirport.CountryName,
+                Code = flight.FromAirport.Code,
+            },
+            ToAirport = new AirportDto()
+            {
+                City = flight.ToAirport.City,
+                CountryName = flight.ToAirport.CountryName,
+                Code = flight.ToAirport.Code,
+            },
+        };
     }
     
     public static FlightSegment ToFlightSegment(Flight flight)
@@ -63,13 +120,14 @@ public class Flight
             DurationMins = flight.DurationMins,
             FlightPrice = flight.FlightPrice,
             BusinessPrice = flight.BusinessPrice,
-            AirportFrom = new AirportDto()
+            AirlineName = flight.Airplane.Airline.Name,
+            FromAirport = new AirportDto()
             {
                 City = flight.FromAirport.City,
                 CountryName = flight.FromAirport.CountryName,
                 Code = flight.FromAirport.Code,
             },
-            AirportTo = new AirportDto()
+            ToAirport = new AirportDto()
             {
                 City = flight.ToAirport.City,
                 CountryName = flight.ToAirport.CountryName,

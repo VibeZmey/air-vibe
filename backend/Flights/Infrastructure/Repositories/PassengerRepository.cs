@@ -58,6 +58,13 @@ public class PassengerRepository : IPassengerRepository
             .ToListAsync(ct);
     }
 
+    public async Task<Passenger?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default)
+    {
+        return await _context.Passengers
+            .Include(p => p.Bookings)
+            .Include(p => p.Documents)
+            .FirstOrDefaultAsync(p => p.Id == id, ct);
+    }
     public async Task<IReadOnlyCollection<PassengerWithDocumentsDto>> GetPassengersWithDocumentsByUserId(Guid userId,
         CancellationToken ct = default)
     {
