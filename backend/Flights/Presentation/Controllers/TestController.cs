@@ -38,7 +38,7 @@ public class TestController
     [HttpPost("airline")]
     public async Task CreateAirline(int id, string name, double coef)
     {
-        await _context.Airlines.AddAsync(new Airline(){Id = id, Name = name, Сoefficient = coef});
+        await _context.Airlines.AddAsync(new Airline(){Id = id, Name = name, Coefficient = coef});
         await _context.SaveChangesAsync();
     }
     
@@ -60,72 +60,84 @@ public class TestController
     }
     
 
-    [HttpPost("flights")]
-    public async Task GenerateAirline(int count, string country, string? fromCity, string? toCity, DateTime from, DateTime to, int minuteStep = 60)
+[HttpPost("flights")]
+public async Task GenerateAirline(int count, string country, string? fromCity, string? toCity, DateTime from, DateTime to, int minuteStep = 60)
+{
+    var airplanes = _context.Airplanes.Include(a => a.Airline).ToList();
+    
+    for (int i = 0; i < count; i++)
     {
-        var airplanes = _context.Airplanes.Include(a => a.Airline).ToList();
-        for (int i = 0; i < count; i++)
-        {
-            
-            var c = await _context.Airports
-                .CountAsync(p => p.CountryName == country);
+        var c = await _context.Airports.CountAsync(p => p.CountryName == country);
+        if (c == 0) continue;
 
-            var ap1 = fromCity is null
-                ? await _context.Airports
-                    .Where(p => p.CountryName == country)
-                    .Skip(Random.Shared.Next(0, c))
-                    .FirstOrDefaultAsync()
-                : _context.Airports
-                    .First(p => p.CountryName == country && p.City == fromCity);
-            
-            var ap2 = fromCity is null
-                ? await _context.Airports
-                    .Where(p => p.CountryName == country)
-                    .Skip(Random.Shared.Next(0, c))
-                    .FirstOrDefaultAsync()
-                : _context.Airports
-                    .First(p => p.CountryName == country && p.City == toCity);
-            
-            var dist = Test.CalculateDistance(ap1.Latitude, ap1.Longitude, ap2.Latitude, ap2.Longitude);
-            var dur = (int)((dist / 800) * 60);
-            
-            if(dur < 60) continue;
-            
-            var dep = Test.GenerateRoundedDateTimeUtc(from, to, minuteStep);
-            var arr = dep.AddMinutes(dur);
-            decimal fp;
-            if (dist < 1500)
-                fp = ((decimal)dist) / 15;
-            else if(dist < 3000)
-                fp = ((decimal)dist) / 12;
-            else if (dist < 5000)
-                fp = ((decimal)dist) / 7;
-            else
-                fp = ((decimal)dist) / 5;
-            
-            var airplane = airplanes[Random.Shared.Next(0, airplanes.Count)];
-            
-            var f = new Flight()
-            {
-                Id = Guid.NewGuid(),
-                FromAirportId = ap1.Id,
-                ToAirportId = ap2.Id,
-                DurationMins = dur,
-                DepartureTime = dep,
-                ArrivalTime = arr.AddHours(ap2.TimezoneOffset-ap1.TimezoneOffset),
-                FlightPrice = Math.Round(fp, 2)*(decimal)airplane.Airline.Сoefficient,
-                LuggagePrice = Random.Shared.Next(25, 100),
-                BusinessPrice = Math.Round(fp*2, 2)*(decimal)airplane.Airline.Сoefficient,
-                FoodPrice = Random.Shared.Next(10, 30),
-                Status = FlightStatus.Scheduled,
-                AirplaneId = airplane.Id,
-                TotalSeats = airplane.Rows*airplane.Columns,
-                BusinessSeats = airplane.BuisnessRows*airplane.BuisnessColumns,
-                BookedBusinessSeats = 0,
-                BookedSeats = 0,
-            };
-            await _context.Flights.AddAsync(f);
-        }
+        var ap1 = fromCity is null
+            ? await _context.Airports.Where(p => p.CountryName == country)
+                .Skip(Random.Shared.Next(0, c))
+                .FirstOrDefaultAsync()
+            : await _context.Airports.FirstAsync(p => p.CountryName == country && p.City == fromCity);
+
+        var ap2 = toCity is null
+            ? await _context.Airports.Where(p => p.CountryName == country)
+                .Skip(Random.Shared.Next(0, c))
+                .FirstOrDefaultAsync()
+            : await _context.Airports.FirstAsync(p => p.CountryName == country && p.City == toCity);
+
+        if (ap1 is null || ap2 is null) continue;
+
+        var dist = Test.CalculateDistance(ap1.Latitude, ap1.Longitude, ap2.Latitude, ap2.Longitude);
+        var dur = (int)((dist / 800) * 60);
+        if (dur < 60) continue;
+
+        var depUtc = Test.GenerateRoundedDateTimeUtc(from, to, minuteStep);
+        var arrUtc = depUtc.AddMinutes(dur);
+
+
+        decimal fp = dist switch
+        {
+            < 1500 => ((decimal)dist) / 15,
+            < 3000 => ((decimal)dist) / 12,
+            < 5000 => ((decimal)dist) / 7,
+            _      => ((decimal)dist) / 5
+        };
+
+        var airplane = airplanes[Random.Shared.Next(0, airplanes.Count)];
+        var flight = new Flight
+        {
+            Id = Guid.NewGuid(),
+            FlightNumber = Guid.NewGuid().ToString().Substring(0, 4).ToUpper(),
+            FromAirportId = ap1.Id,
+            ToAirportId = ap2.Id,
+            DurationMins = dur,
+            DepartureTime = depUtc,
+            ArrivalTime = arrUtc,
+            FlightPrice = Math.Round(fp, 2) * (decimal)airplane.Airline.Coefficient,
+            LuggagePrice = Random.Shared.Next(25, 100),
+            BusinessPrice = Math.Round(fp * 2, 2) * (decimal)airplane.Airline.Coefficient,
+            FoodPrice = Random.Shared.Next(10, 30),
+            Status = FlightStatus.Scheduled,
+            AirplaneId = airplane.Id,
+            TotalSeats = airplane.Rows * airplane.Columns,
+            BusinessSeats = airplane.BuisnessRows * airplane.BuisnessColumns,
+            BookedBusinessSeats = 0,
+            BookedSeats = 0,
+        };
+
+        await _context.Flights.AddAsync(flight);
+    }
+
+    await _context.SaveChangesAsync();
+}
+    [HttpDelete("flights")]
+    public async Task DeleteFlights()
+    {
+        _context.Flights.RemoveRange(_context.Flights);
+        await _context.SaveChangesAsync();
+    }
+
+    [HttpDelete("outbox")]
+    public async Task DeleteOutbox()
+    {
+        _context.OutboxMessages.RemoveRange(_context.OutboxMessages);
         await _context.SaveChangesAsync();
     }
 }

@@ -8,5 +8,12 @@ public interface IFlightRepository
     Task<IReadOnlyCollection<GetFlightsByFilterDto>> GetFlightsByFilter(SearchFlightsQuery query,
         CancellationToken ct = default);
 
-    Task<Flight?> GetByIdWithDetailsAsync(Guid flightId, CancellationToken ct = default);
+    Task<Flight?> GetByIdWithDetailsAsync(Guid flightId, 
+        CancellationToken ct = default);
+
+    Task<IReadOnlyCollection<Flight>> GetFlightsReadyForTimeTransitionsAsync(DateTime now,
+        CancellationToken ct = default);
+
+    Task<IReadOnlyCollection<Guid>?> GetUsersIdsByFlightId(Guid id, 
+        CancellationToken ct = default);
 }

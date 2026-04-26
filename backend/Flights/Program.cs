@@ -50,7 +50,6 @@ builder.Services.AddControllers();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 
-
 var app = builder.Build();
 var rsaKey = app.Services.GetRequiredService<RSA>();
 app.Lifetime.ApplicationStopping.Register(() => rsaKey.Dispose());

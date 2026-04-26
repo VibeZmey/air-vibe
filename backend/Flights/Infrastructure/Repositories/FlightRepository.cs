@@ -1,9 +1,8 @@
-﻿using Flights.Application.Common;
-using Flights.Application.Common.Interfaces;
-using Flights.Application.Features.Flights;
+﻿using Flights.Application.Common.Interfaces;
 using Flights.Domain.Dto;
 using Flights.Domain.Interfaces;
 using Flights.Domain.Models;
+using Flights.Infrastructure.Common;
 using Flights.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -195,6 +194,28 @@ public class FlightRepository : IFlightRepository
             .ToList();
     }
 
+    //функция возвращает нам рейсы в которых уже возможно изменение их статуса,
+    //довольно грубо отсекается часть рейсов чтобы не делать сложных запрос к базе,
+    //более детальная проверка реализована в Domain
+    public async Task<IReadOnlyCollection<Flight>> GetFlightsReadyForTimeTransitionsAsync(
+        DateTime now, 
+        CancellationToken ct = default)
+    {
+        return await _context.Flights
+            .Where(f => f.Status == FlightStatus.Scheduled || f.Status == FlightStatus.CheckIn)
+            .Where(f => f.DepartureTime <= now.AddHours(24))
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyCollection<Guid>?> GetUsersIdsByFlightId(Guid id, CancellationToken ct = default)
+    {
+        var flight = await _context.Flights
+            .Include(f => f.Bookings)
+            .FirstOrDefaultAsync(f => f.Id == id, ct);
+        
+        return flight?.Bookings.Select(b => b.UserId).ToList();
+    }
+
     public async Task<Flight?> GetByIdWithDetailsAsync(Guid flightId, CancellationToken ct = default)
     {
         return await _context
@@ -205,5 +226,4 @@ public class FlightRepository : IFlightRepository
             .Include(f => f.Bookings)
             .FirstOrDefaultAsync(f => f.Id == flightId, ct);
     }
-    
 }

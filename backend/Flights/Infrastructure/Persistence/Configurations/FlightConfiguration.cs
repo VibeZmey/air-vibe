@@ -10,6 +10,8 @@ public class FlightConfiguration : IEntityTypeConfiguration<Flight>
     {
         builder.HasKey(f => f.Id);
         
+        builder.Ignore(f => f.Events);
+        
         builder
             .HasIndex(f => 
                 new { f.FromAirportId, f.ToAirportId, f.DepartureTime })

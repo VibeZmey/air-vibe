@@ -1,6 +1,6 @@
 ﻿using Flights.Domain.Dto;
 
-namespace Flights.Application.Common;
+namespace Flights.Infrastructure.Common;
 
 public static class CacheKeys
 {
@@ -8,7 +8,6 @@ public static class CacheKeys
 
     public static string AirportsByCityKey(string city)
         => $"airports:city:{city}";
-
     
     public static string FlightsByFilterKey(SearchFlightsQuery query)
     {

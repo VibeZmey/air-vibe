@@ -3,6 +3,7 @@ using Flights.Domain.Interfaces;
 using Flights.Infrastructure.Persistence;
 using Flights.Infrastructure.Repositories;
 using Flights.Infrastructure.Services;
+using Flights.Infrastructure.Workers;
 using Microsoft.EntityFrameworkCore;
 
 namespace Flights.Infrastructure;
@@ -26,7 +27,9 @@ public static class DependencyInjection
         services.AddScoped<IFlightRepository, FlightRepository>();
         services.AddScoped<IBookingRepository, BookingRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddHostedService<UpdateFlightStatusWorker>();
+        services.AddHostedService<OutboxWorker>();
         return services;
     }
 }

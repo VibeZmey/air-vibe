@@ -30,15 +30,15 @@ namespace Flights.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<double>("Coefficient")
+                        .HasColumnType("double precision");
+
                     b.Property<string>("IconUrl")
                         .HasColumnType("text");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<double>("Сoefficient")
-                        .HasColumnType("double precision");
 
                     b.HasKey("Id");
 
@@ -67,7 +67,8 @@ namespace Flights.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<int>("Rows")
                         .HasColumnType("integer");
@@ -177,8 +178,13 @@ namespace Flights.Migrations
             modelBuilder.Entity("Flights.Domain.Models.Document", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Series")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Number")
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("DateOfBirth")
                         .HasColumnType("timestamp with time zone");
@@ -197,15 +203,8 @@ namespace Flights.Migrations
                     b.Property<string>("MiddleName")
                         .HasColumnType("text");
 
-                    b.Property<string>("Number")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<Guid>("PassengerId")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("Series")
-                        .HasColumnType("text");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -216,7 +215,7 @@ namespace Flights.Migrations
                     b.Property<DateTime?>("ValidityPeriod")
                         .HasColumnType("timestamp with time zone");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id", "Series", "Number");
 
                     b.HasIndex("PassengerId");
 
@@ -253,6 +252,10 @@ namespace Flights.Migrations
                     b.Property<int>("DurationMins")
                         .HasColumnType("integer");
 
+                    b.Property<string>("FlightNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<decimal>("FlightPrice")
                         .HasColumnType("numeric");
 
@@ -286,20 +289,71 @@ namespace Flights.Migrations
                     b.ToTable("Flights");
                 });
 
+            modelBuilder.Entity("Flights.Domain.Models.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("Flights.Domain.Models.OutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Data")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("LastError")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("OccurredOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Processed")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Retries")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Processed", "OccurredOn")
+                        .HasDatabaseName("IX_OutboxMessages_Processed_OccurredOn");
+
+                    b.ToTable("OutboxMessages");
+                });
+
             modelBuilder.Entity("Flights.Domain.Models.Passenger", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Email")
-                        .HasColumnType("text");
-
                     b.Property<bool>("IsSaved")
                         .HasColumnType("boolean");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("text");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -378,6 +432,64 @@ namespace Flights.Migrations
                     b.Navigation("FromAirport");
 
                     b.Navigation("ToAirport");
+                });
+
+            modelBuilder.Entity("Flights.Domain.Models.Notification", b =>
+                {
+                    b.OwnsOne("Flights.Domain.Models.NotificationPayload", "Payload", b1 =>
+                        {
+                            b1.Property<Guid>("NotificationId");
+
+                            b1.Property<decimal?>("Amount");
+
+                            b1.Property<DateTime?>("ArrivalTime");
+
+                            b1.Property<string>("BookingId");
+
+                            b1.Property<string>("BookingReference");
+
+                            b1.Property<string>("CityFrom");
+
+                            b1.Property<string>("CityTo");
+
+                            b1.Property<string>("Currency");
+
+                            b1.Property<DateTime?>("DepartureTime");
+
+                            b1.Property<DateTime>("EndTime");
+
+                            b1.Property<string>("FlightNumber");
+
+                            b1.Property<string>("Gate");
+
+                            b1.Property<TimeSpan?>("HoursBefore");
+
+                            b1.Property<string>("Message");
+
+                            b1.Property<string>("PassengerEmail");
+
+                            b1.Property<string>("PassengerName");
+
+                            b1.Property<DateTime>("StartTime");
+
+                            b1.Property<int>("Status");
+
+                            b1.Property<string>("Title");
+
+                            b1.HasKey("NotificationId");
+
+                            b1.ToTable("Notifications");
+
+                            b1
+                                .ToJson("Payload")
+                                .HasColumnType("jsonb");
+
+                            b1.WithOwner()
+                                .HasForeignKey("NotificationId");
+                        });
+
+                    b.Navigation("Payload")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Flights.Domain.Models.Airline", b =>

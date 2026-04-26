@@ -1,11 +1,10 @@
-﻿using Flights.Application.Common;
-using Flights.Application.Common.Interfaces;
-using Flights.Application.Features.Flights.GetFlightsByFilter;
+﻿using Flights.Application.Common.Interfaces;
 using Flights.Domain.Dto;
 using Flights.Domain.Interfaces;
+using Flights.Infrastructure.Common;
 using MediatR;
 
-namespace Flights.Application.Features.Flights;
+namespace Flights.Application.Features.Flights.GetFlightsByFilter;
 
 public class GetFlightsByFilterHandler : 
     IRequestHandler<GetFlightsByFilterQuery, IReadOnlyCollection<GetFlightsByFilterDto>>

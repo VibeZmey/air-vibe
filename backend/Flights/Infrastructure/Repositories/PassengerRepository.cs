@@ -75,8 +75,6 @@ public class PassengerRepository : IPassengerRepository
             .Select(p => new PassengerWithDocumentsDto
             {
                 Id = p.Id,
-                Email = p.Email,
-                PhoneNumber = p.Email,
                 Type = p.Type,
                 Documents = p.Documents.Select(d => new DocumentDto
                 {

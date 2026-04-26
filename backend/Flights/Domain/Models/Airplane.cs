@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Flights.Domain.Models;
 
@@ -6,6 +7,7 @@ public class Airplane
 {
     public int Id { get; set; }
     
+    [MaxLength(100)] 
     public string Name { get; set; } 
     public int Rows { get; set; }
     public int Columns { get; set; }
