@@ -1,6 +1,7 @@
 ﻿using Flights.Application.Common.Interfaces;
 using Flights.Domain.Interfaces;
 using Flights.Infrastructure.Common;
+using MediatR;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -10,10 +11,13 @@ public class UnitOfWork : IUnitOfWork, IDisposable
 {
     private readonly FlightsDbContext _context;
     private IDbContextTransaction? _transaction;
+    private readonly IMediator _mediator;
 
     public UnitOfWork(
-        FlightsDbContext context)
+        FlightsDbContext context,
+        IMediator mediator)
     {
+        _mediator = mediator;
         _context = context;
     }
 
@@ -26,8 +30,7 @@ public class UnitOfWork : IUnitOfWork, IDisposable
         {
             foreach (var evt in entry.Entity.Events)
             {
-                var outboxMsg = EventSerializer.Serialize(evt);
-                _context.OutboxMessages.Add(outboxMsg);
+                await _mediator.Publish(evt, ct);
             }
             entry.Entity.ClearEvents();
         }

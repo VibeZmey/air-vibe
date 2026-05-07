@@ -110,7 +110,7 @@ public class Document
     {
         Document result = new Document
         {
-            Id = Guid.Empty,
+            Id = Guid.NewGuid(),
             Series = series,
             Number = number,
             Type = type,

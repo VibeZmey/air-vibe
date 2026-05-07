@@ -8,7 +8,7 @@ namespace Flights.Domain.Models;
 public class Flight : IDomainEventEmitter
 {
     public Guid Id { get; set; }
-    public string FlightNumber { get; set; } = string.Empty;
+    public string Number { get; set; } = string.Empty;
     public int DurationMins { get; set; }
     public DateTime DepartureTime { get; set; }
     public DateTime ArrivalTime { get; set; }
@@ -38,7 +38,6 @@ public class Flight : IDomainEventEmitter
             now.AddHours(24) >= DepartureTime && now < DepartureTime)
         {
             Status = FlightStatus.CheckIn;
-            //TODO: протестить всё, на сегодня хватит
             //TODO: добавить ивент на отправку уведомления на сайте и на почту, так же и для всех остальных
             _events.Add(new CheckInOpenedEvent()
             {
@@ -46,7 +45,7 @@ public class Flight : IDomainEventEmitter
                 DepartureTime = DepartureTime,
                 StartTime = DepartureTime.AddHours(-24),
                 EndTime = DepartureTime.AddMinutes(-30),
-                FlightNumber = FlightNumber,
+                FlightNumber = Number,
                 NewStatus = Status,
                 CreatedAt = DateTime.UtcNow
             });
@@ -57,6 +56,7 @@ public class Flight : IDomainEventEmitter
         if (Status == FlightStatus.CheckIn &&
             now.AddMinutes(30) >= DepartureTime && now < DepartureTime)
         {
+            
             Status = FlightStatus.Boarding;
             Console.WriteLine(nameof(FlightStatus.Boarding));
             return;
@@ -130,7 +130,6 @@ public class Flight : IDomainEventEmitter
         
         if (Status != FlightStatus.Scheduled && Status != FlightStatus.CheckIn)
             throw new ApplicationException("Cannot add booking when Status is not Scheduled");
-        Console.WriteLine("BEFORE ADD BOOKING");
         Bookings.Add(booking);
     }
     public static FlightForBookingDto ToFlightForBooking(Flight flight)

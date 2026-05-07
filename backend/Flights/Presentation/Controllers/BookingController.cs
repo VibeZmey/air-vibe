@@ -1,6 +1,5 @@
 ﻿using Flights.Application.Features.Bookings.CancelBooking;
 using Flights.Application.Features.Bookings.ConfirmBooking;
-using Flights.Application.Features.Bookings.CreateBooking;
 using Flights.Domain.Interfaces;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -19,25 +18,14 @@ public class BookingController : ControllerBase
     {
         _mediator = mediator;
     }
-
-    [HttpPost]
+    
+    [HttpPost("confirm-batch")]
     [Authorize(Roles = "Admin, User, Supporter")]
-    public async Task<IActionResult> CreateBooking([FromBody] CreateBookingCommand request,
+    public async Task<IActionResult> ConfirmBookingsBatch(
+        [FromBody] ConfirmBookingsCommand command, 
         CancellationToken ct)
     {
-        await _mediator.Send(request, ct);
-        return Ok();
-    }
-
-    [HttpPatch("{id:guid}/confirm")]
-    [Authorize(Roles = "Admin, User, Supporter")]
-    public async Task<IActionResult> ConfirmBooking([FromRoute] Guid id, CancellationToken cancellationToken)
-    {
-        var command = new ConfirmBookingCommand()
-        {
-            BookingId = id
-        };
-        await _mediator.Send(command, cancellationToken);
+        await _mediator.Send(command, ct);
         return Ok();
     }
     

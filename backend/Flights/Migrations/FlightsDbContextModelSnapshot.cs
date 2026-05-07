@@ -149,6 +149,9 @@ namespace Flights.Migrations
                     b.Property<bool>("IsBusiness")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("PassengerId")
                         .HasColumnType("uuid");
 
@@ -169,6 +172,8 @@ namespace Flights.Migrations
 
                     b.HasIndex("FlightId")
                         .HasDatabaseName("IX_Flight");
+
+                    b.HasIndex("OrderId");
 
                     b.HasIndex("PassengerId");
 
@@ -252,10 +257,6 @@ namespace Flights.Migrations
                     b.Property<int>("DurationMins")
                         .HasColumnType("integer");
 
-                    b.Property<string>("FlightNumber")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<decimal>("FlightPrice")
                         .HasColumnType("numeric");
 
@@ -267,6 +268,10 @@ namespace Flights.Migrations
 
                     b.Property<decimal>("LuggagePrice")
                         .HasColumnType("numeric");
+
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -310,6 +315,34 @@ namespace Flights.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("Flights.Domain.Models.Order", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FlightId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("TotalPrice")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FlightId");
+
+                    b.ToTable("Orders");
                 });
 
             modelBuilder.Entity("Flights.Domain.Models.OutboxMessage", b =>
@@ -385,6 +418,12 @@ namespace Flights.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Flights.Domain.Models.Order", "Order")
+                        .WithMany("Bookings")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("Flights.Domain.Models.Passenger", "Passenger")
                         .WithMany("Bookings")
                         .HasForeignKey("PassengerId")
@@ -392,6 +431,8 @@ namespace Flights.Migrations
                         .IsRequired();
 
                     b.Navigation("Flight");
+
+                    b.Navigation("Order");
 
                     b.Navigation("Passenger");
                 });
@@ -440,11 +481,9 @@ namespace Flights.Migrations
                         {
                             b1.Property<Guid>("NotificationId");
 
-                            b1.Property<decimal?>("Amount");
-
                             b1.Property<DateTime?>("ArrivalTime");
 
-                            b1.Property<string>("BookingId");
+                            b1.Property<Guid?>("BookingId");
 
                             b1.Property<string>("BookingReference");
 
@@ -476,6 +515,8 @@ namespace Flights.Migrations
 
                             b1.Property<string>("Title");
 
+                            b1.Property<decimal?>("TotalPrice");
+
                             b1.HasKey("NotificationId");
 
                             b1.ToTable("Notifications");
@@ -490,6 +531,17 @@ namespace Flights.Migrations
 
                     b.Navigation("Payload")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Flights.Domain.Models.Order", b =>
+                {
+                    b.HasOne("Flights.Domain.Models.Flight", "Flight")
+                        .WithMany()
+                        .HasForeignKey("FlightId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Flight");
                 });
 
             modelBuilder.Entity("Flights.Domain.Models.Airline", b =>
@@ -510,6 +562,11 @@ namespace Flights.Migrations
                 });
 
             modelBuilder.Entity("Flights.Domain.Models.Flight", b =>
+                {
+                    b.Navigation("Bookings");
+                });
+
+            modelBuilder.Entity("Flights.Domain.Models.Order", b =>
                 {
                     b.Navigation("Bookings");
                 });

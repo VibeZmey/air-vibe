@@ -36,6 +36,7 @@ public class Passenger
     
     public static Passenger Create(
         Guid userId,
+        PassengerType type,
         bool isSaved,
         string? email = null,
         string? phoneNumber = null)
@@ -44,7 +45,7 @@ public class Passenger
         return new Passenger
         {
             Id = Guid.NewGuid(),
-            Type = PassengerType.None,
+            Type = type,
             UserId = userId,
             IsSaved = isSaved
         };

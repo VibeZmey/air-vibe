@@ -1,5 +1,7 @@
 ﻿using Flights.Domain.Dto;
+using Flights.Domain.Events;
 using Flights.Domain.Exceptions;
+using Flights.Domain.Interfaces;
 
 namespace Flights.Domain.Models;
 
@@ -7,6 +9,9 @@ public class Booking
 {
     public Guid Id { get; private set; }
     public Guid UserId { get; private set; }
+    
+    public Guid OrderId { get; private set; }
+    public Order Order { get; private set; }
     public Guid PassengerId { get; private set; }
     public Passenger Passenger { get; private set; }
     public string SeatNumber { get; private set; }
@@ -46,6 +51,7 @@ public class Booking
     }
     public static Booking Create(
         Guid userId,
+        Guid orderId,
         Passenger passenger,
         string seatNumber,
         Flight flight)
@@ -67,6 +73,7 @@ public class Booking
             // эту сущность как существующую и при ее добавлении создает
             // UPDATE запрос, а не INSERT
             Id = Guid.Empty,
+            OrderId = orderId,
             UserId = userId,
             PassengerId = passenger.Id,
             FlightId = flight.Id,

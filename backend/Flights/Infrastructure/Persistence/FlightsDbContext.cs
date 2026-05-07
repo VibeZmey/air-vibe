@@ -17,6 +17,7 @@ public class FlightsDbContext : DbContext
     public DbSet<Airplane> Airplanes { get; set; }
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<OutboxMessage> OutboxMessages { get; set; }
+    public DbSet<Order> Orders { get; set; }
     public FlightsDbContext(DbContextOptions<FlightsDbContext> options) 
         : base(options) { }
 

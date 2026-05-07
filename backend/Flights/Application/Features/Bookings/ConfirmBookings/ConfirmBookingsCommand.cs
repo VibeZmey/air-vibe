@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Flights.Application.Features.Bookings.ConfirmBooking;
 
-public class ConfirmBookingCommand : IRequest<Unit>
+public class ConfirmBookingsCommand : IRequest<Unit>
 {
-    public Guid BookingId { get; set; }
+    public List<Guid> BookingIds { get; set; } = [];
 }

@@ -23,9 +23,18 @@ public class BookingRepository : IBookingRepository
     {
         await _context.Bookings.AddAsync(booking, ct);
     }
+
+    public async Task<Booking?> GetByIdWithDetailsAsync(Guid id, CancellationToken ct = default)
+    {
+        return await _context.Bookings
+            .Include(b => b.Passenger)
+            .Include(b => b.Flight)
+            .FirstOrDefaultAsync(b => b.Id == id, ct);
+    }
     public async Task<Booking?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        return await _context.Bookings.FindAsync(id, ct);
+        return await _context.Bookings
+            .FirstOrDefaultAsync(b => b.Id == id, ct);
     }
     public async Task<IReadOnlyCollection<BookingDto>> GetAllByUserIdAsync(Guid userId,CancellationToken ct = default)
     {

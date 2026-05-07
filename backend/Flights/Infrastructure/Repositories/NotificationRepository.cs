@@ -12,6 +12,12 @@ public class NotificationRepository : INotificationRepository
     {
         _context = context;
     }
+
+    public async Task AddAsync(Notification notification, CancellationToken ct = default)
+    {
+        await _context.Notifications
+            .AddAsync(notification, ct);
+    } 
     
     public Task<IReadOnlyCollection<Notification>> GetByUserId(Guid userId)
     {

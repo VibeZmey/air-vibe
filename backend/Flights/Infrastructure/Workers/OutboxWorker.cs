@@ -1,5 +1,4 @@
-﻿using Flights.Application.Features.Flights.UpdateFlightStatus;
-using Flights.Infrastructure.Common;
+﻿using Flights.Infrastructure.Common;
 using Flights.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;

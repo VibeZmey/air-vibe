@@ -4,6 +4,7 @@ using Flights.Application;
 using Flights.Domain.Exceptions;
 using Flights.Infrastructure;
 using Flights.Infrastructure.Persistence;
+using MassTransit;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
@@ -49,6 +50,22 @@ builder.Services.AddApiAuthentication(builder.Configuration, builder.Environment
 builder.Services.AddControllers();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
+
+builder.Services.AddMassTransit(x =>
+{
+    x.UsingRabbitMq((ctx, cfg) =>
+    {
+        var section = builder.Configuration.GetSection("RabbitMq");
+        cfg.Host(
+            section["HostName"],
+            section["VirtualHost"] ?? "/",
+            h =>
+            {
+                h.Username(section["UserName"]);
+                h.Password(section["Password"]);
+            });
+    });
+});
 
 var app = builder.Build();
 var rsaKey = app.Services.GetRequiredService<RSA>();

@@ -1,10 +1,15 @@
 ﻿using Flights.Application.Common.Interfaces;
 using Flights.Domain.Interfaces;
+using Flights.Infrastructure.Options;
 using Flights.Infrastructure.Persistence;
 using Flights.Infrastructure.Repositories;
 using Flights.Infrastructure.Services;
 using Flights.Infrastructure.Workers;
+using GreenPipes;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using RabbitMQ.Client;
+using SharedContracts.Messages;
 
 namespace Flights.Infrastructure;
 
@@ -15,7 +20,7 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.AddDbContext<FlightsDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+            options.UseNpgsql(configuration.GetConnectionString("Postgres")));
         services.AddStackExchangeRedisCache(options =>
         {
             options.Configuration = configuration.GetConnectionString("Redis");
@@ -29,7 +34,10 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddHostedService<UpdateFlightStatusWorker>();
-        services.AddHostedService<OutboxWorker>();
+        //services.AddHostedService<OutboxWorker>();
+        services.AddScoped<IOrderRepository, OrderRepository>();
+        
+        services.Configure<RabbitMqSettings>(configuration.GetSection("RabbitMq"));
         return services;
     }
 }

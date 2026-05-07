@@ -10,6 +10,9 @@ public interface IFlightRepository
 
     Task<Flight?> GetByIdWithDetailsAsync(Guid flightId, 
         CancellationToken ct = default);
+    
+    Task<HashSet<Guid>> GetUserIdsByFlightIdAsync(Guid flightId,
+        CancellationToken ct = default);
 
     Task<IReadOnlyCollection<Flight>> GetFlightsReadyForTimeTransitionsAsync(DateTime now,
         CancellationToken ct = default);

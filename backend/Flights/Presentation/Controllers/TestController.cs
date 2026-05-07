@@ -104,7 +104,7 @@ public async Task GenerateAirline(int count, string country, string? fromCity, s
         var flight = new Flight
         {
             Id = Guid.NewGuid(),
-            FlightNumber = Guid.NewGuid().ToString().Substring(0, 4).ToUpper(),
+            Number = Guid.NewGuid().ToString().Substring(0, 4).ToUpper(),
             FromAirportId = ap1.Id,
             ToAirportId = ap2.Id,
             DurationMins = dur,

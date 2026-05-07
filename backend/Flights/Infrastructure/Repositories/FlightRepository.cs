@@ -193,6 +193,16 @@ public class FlightRepository : IFlightRepository
             .Take(query.PageSize)
             .ToList();
     }
+    
+    public async Task<HashSet<Guid>> GetUserIdsByFlightIdAsync(Guid flightId, CancellationToken ct = default)
+    {
+        return await _context.Bookings
+            .AsNoTracking()
+            .Where(b => b.FlightId == flightId)
+            .Select(b => b.UserId)
+            .Distinct()
+            .ToHashSetAsync(ct);
+    }
 
     //функция возвращает нам рейсы в которых уже возможно изменение их статуса,
     //довольно грубо отсекается часть рейсов чтобы не делать сложных запрос к базе,
