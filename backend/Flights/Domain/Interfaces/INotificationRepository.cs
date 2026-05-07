@@ -8,4 +8,7 @@ public interface INotificationRepository
     
     Task AddRangeAsync(IReadOnlyCollection<Notification> notifications, 
         CancellationToken ct = default);
+
+    Task AddAsync(Notification notification, 
+        CancellationToken ct = default);
 }
