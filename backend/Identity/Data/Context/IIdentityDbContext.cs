@@ -9,5 +9,6 @@ public interface IIdentityDbContext
     DbSet<User> Users { get; set; }
     DbSet<Role> Roles { get; set; }
     DbSet<RefreshToken> RefreshTokens { get; set; }
+    DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; }
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }

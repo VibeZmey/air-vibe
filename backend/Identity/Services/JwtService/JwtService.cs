@@ -42,7 +42,8 @@ internal class JwtService : IJwtService
         
         Claim[] claims = [
             new ("userId", user.Id.ToString()),
-            new ("role", role.Name)
+            new ("role", role.Name),
+            new ("email", user.Email)
         ];
 
         var tokenExpires = DateTime.UtcNow.AddMinutes(_options.TokenValidityMins);

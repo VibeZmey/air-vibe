@@ -20,5 +20,10 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasMany(u => u.RefreshTokens)
             .WithOne(r => r.User)
             .HasForeignKey(r => r.UserId);
+        
+        builder
+            .HasMany(u => u.EmailVerificationTokens)
+            .WithOne(r => r.User)
+            .HasForeignKey(r => r.UserId);
     }
 }
