@@ -1,0 +1,254 @@
+﻿.container {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.content {
+  display: grid;
+  gap: 24px;
+}
+
+.confirmationBox {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid rgba(139, 92, 246, 0.18);
+  padding: 48px 32px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.checkmark {
+  font-size: 4rem;
+  color: #22c55e;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.confirmationBox h1 {
+  margin: 0 0 8px;
+  font-size: 2rem;
+  color: #1f2937;
+}
+
+.confirmationBox > p {
+  margin: 0 0 32px;
+  color: #6b7280;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.orderDetails {
+  background: #fafaf8;
+  border-radius: 12px;
+  border: 1px solid #ede9fe;
+  padding: 24px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.detailRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap:16px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detailRow:last-child {
+  border-bottom: none;
+}
+
+.label {
+  font-weight: 600;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.value {
+  color: #1f2937;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.statusPending {
+  display: inline-block;
+  background-color: rgba(251, 191, 36, 0.1);
+  color: #d97706;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+}
+
+.bookingsList {
+  text-align: left;
+  margin-bottom: 24px;
+}
+
+.bookingsList h2 {
+  margin: 0 0 16px;
+  font-size: 1.2rem;
+  color: #1f2937;
+}
+
+.bookingCard {
+  background: #fafaf8;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.bookingInfo {
+  display: grid;
+  gap: 8px;
+}
+
+.passengerName {
+  margin: 0;
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 1rem;
+}
+
+.seatInfo {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.errorMessage {
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.successMessage {
+  background-color: #dcfce7;
+  border: 1px solid #86efac;
+  color: #22c55e;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.cancelBtn,
+.confirmBtn,
+.backBtn {
+  padding: 14px 28px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.backBtn {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+.backBtn:hover {
+  background: #e5e7eb;
+}
+
+.cancelBtn {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: #fecaca;
+}
+
+.cancelBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.confirmBtn {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+}
+
+.confirmBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  box-shadow: 0 8px 16px rgba(34, 197, 94, 0.3);
+}
+
+.confirmBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.note {
+  margin:0;
+  color: #9ca3af;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.loading {
+  padding: 48px 24px;
+  text-align: center;
+  font-size: 1.1rem;
+  color: #6b7280;
+}
+
+.error {
+  padding: 24px;
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 12px;
+  color: #dc2626;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 16px;
+  }
+
+  .confirmationBox {
+    padding: 32px 20px;
+  }
+
+  .checkmark {
+    font-size: 3rem;
+  }
+
+  .confirmationBox h1 {
+    font-size: 1.5rem;
+  }
+
+  .detailRow {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .actions {
+    grid-template-columns: 1fr;
+  }
+
+  .orderDetails {
+    padding: 16px;
+  }
+}
+
