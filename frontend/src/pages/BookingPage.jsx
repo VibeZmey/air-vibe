@@ -114,7 +114,31 @@ function Step1PassengerDocuments({ flight, passengers, onNext, onBack }) {
         if (pData.useExisting && pData.existingPassengerId) {
           passengerId = pData.existingPassengerId;
         } else {
-          // Create passenger
+          // Validate document before creating
+          const validationPayload = {
+            Type: DOCUMENT_TYPE[pData.documents.type] || 0,
+            FirstName: pData.documents.firstName,
+            MiddleName: pData.documents.middleName || null,
+            LastName: pData.documents.lastName,
+            Number: pData.documents.number,
+            Series: pData.documents.series || null,
+            Gender: GENDER[pData.documents.gender] || 0,
+            DateOfBirth: pData.documents.dateOfBirth,
+            ValidityPeriod: pData.documents.validityPeriod || null,
+            UserId: user.id,
+          };
+
+          try {
+            await apiClient.post('/documents/validate', validationPayload);
+          } catch (validationErr) {
+            throw new Error(
+              `Passenger ${i + 1} document validation failed: ${
+                validationErr.response?.data?.message || validationErr.message
+              }`
+            );
+          }
+
+          // Validation passed, create passenger
           const passengerResp = await apiClient.post('/passengers', {
             userId: user.id,
             type: pData.type,
@@ -122,7 +146,7 @@ function Step1PassengerDocuments({ flight, passengers, onNext, onBack }) {
           });
           passengerId = passengerResp.data.id || passengerResp.data.Id;
 
-          // Create document
+          // Create document (now with validated data)
           await apiClient.post('/documents', {
             passengerId: passengerId,
             type: DOCUMENT_TYPE[pData.documents.type] || 0,
@@ -305,6 +329,7 @@ function Step1PassengerDocuments({ flight, passengers, onNext, onBack }) {
                         onChange={(e) => {
                           const updated = [...passengerData];
                           updated[pData.index].documents.series = e.target.value;
+                          console.log(updated[pData.index].documents.series);
                           setPassengerData(updated);
                         }}
                         placeholder="Series"
@@ -376,38 +401,59 @@ function Step2SeatSelection({ flight, passengerData, onNext, onBack }) {
     const seats = [];
 
     // Business class seats (rows 1 to buisnessRows)
+    // Config: 2-2 (A, C | D, F)
     for (let row = 1; row <= airplane.buisnessRows; row++) {
-      const rowSeats = [];
-      const cols = ['A', 'C', 'D', 'F']; // Skip B and E
-      for (let col = 0; col < airplane.buisnessColumns; col++) {
-        const seatLetter = cols[col];
-        const seatNumber = `${row}${seatLetter}`;
-        rowSeats.push({
+      const rowData = {};
+      const letters = ['A', 'C', 'D', 'F'];
+      
+      for (const letter of letters) {
+        const seatNumber = `${row}${letter}`;
+        rowData[letter] = {
           number: seatNumber,
           isBooked: bookedSeats.includes(seatNumber),
           isBusiness: true,
-        });
+        };
       }
-      seats.push({ type: 'business', rows: rowSeats });
+      
+      seats.push({
+        type: 'business',
+        row: row,
+        seats: rowData,
+        letters: letters,
+      });
     }
 
-    // Spacer (visual delimiter at row 13)
-    seats.push({ type: 'spacer' });
-
-    // Economy class seats
+    // Economy class seats (rows 5 to 28)
+    // Config: 3-3 (A, B, C | D, E, F)
     const economyStartRow = airplane.buisnessRows + 1;
+    let economyRowCount = 0;
+    
     for (let row = economyStartRow; row < economyStartRow + airplane.rows; row++) {
-      const rowSeats = [];
-      for (let col = 0; col < airplane.columns; col++) {
-        const seatLetter = String.fromCharCode(65 + col); // A, B, C, D, E, F
-        const seatNumber = `${row}${seatLetter}`;
-        rowSeats.push({
+      // Add spacer AFTER row 12 (which is the 7th economy row, at index 7)
+      if (economyRowCount === 7) {
+        seats.push({ type: 'spacer' });
+      }
+      
+      const rowData = {};
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+      
+      for (const letter of letters) {
+        const seatNumber = `${row}${letter}`;
+        rowData[letter] = {
           number: seatNumber,
           isBooked: bookedSeats.includes(seatNumber),
           isBusiness: false,
-        });
+        };
       }
-      seats.push({ type: 'economy', rows: rowSeats });
+      
+      seats.push({
+        type: 'economy',
+        row: row,
+        seats: rowData,
+        letters: letters,
+      });
+      
+      economyRowCount++;
     }
 
     return seats;
@@ -416,10 +462,25 @@ function Step2SeatSelection({ flight, passengerData, onNext, onBack }) {
   const seatMap = generateSeatMap();
 
   function handleSeatClick(seatNumber, passengerIndex) {
-    setSelectedSeats((prev) => ({
-      ...prev,
-      [passengerIndex]: seatNumber,
-    }));
+    if (selectedSeats[passengerIndex] === seatNumber) {
+      // Toggle: deselect if clicking same seat
+      setSelectedSeats((prev) => ({
+        ...prev,
+        [passengerIndex]: null,
+      }));
+    } else {
+      setSelectedSeats((prev) => ({
+        ...prev,
+        [passengerIndex]: seatNumber,
+      }));
+    }
+  }
+
+  function findPassengerForSeat(seatNumber) {
+    for (const [index, seat] of Object.entries(selectedSeats)) {
+      if (seat === seatNumber) return parseInt(index);
+    }
+    return null;
   }
 
   const allSeatsSelected = Object.values(selectedSeats).every((s) => s !== null);
@@ -427,7 +488,7 @@ function Step2SeatSelection({ flight, passengerData, onNext, onBack }) {
   return (
     <div className={styles.stepContent}>
       <h2>Step 2: Select Seats</h2>
-      <p>Choose a seat for each passenger</p>
+      <p>Click on a seat to select it for a passenger. Click again to deselect.</p>
 
       <div className={styles.seatSelectionContainer}>
         <div className={styles.seatSelectionLeft}>
@@ -438,28 +499,237 @@ function Step2SeatSelection({ flight, passengerData, onNext, onBack }) {
                 if (row.type === 'spacer') {
                   return <div key="spacer" className={styles.spacPlus}></div>;
                 }
+                
+                const isBusiness = row.type === 'business';
+                
                 return (
-                  <div key={rowIndex} className={styles.seatRow}>
-                    {row.rows.map((seat) => (
-                      <button
-                        key={seat.number}
-                        className={`${styles.seat} ${seat.isBooked ? styles.seatBooked : ''} ${seat.isBusiness ? styles.seatBusiness : ''} ${
-                          Object.values(selectedSeats).includes(seat.number) ? styles.seatSelected : ''
-                        }`}
-                        onClick={() => {
-                          // Allow passenger to click and assign seat
-                          // Find if there's a passenger with no seat for assignment
-                          const unassignedIndex = passengerData.findIndex((_, i) => !selectedSeats[i] || selectedSeats[i] === null);
-                          if (unassignedIndex >= 0) {
-                            handleSeatClick(seat.number, unassignedIndex);
-                          }
-                        }}
-                        disabled={seat.isBooked}
-                        title={seat.isBooked ? 'Booked' : seat.number}
-                      >
-                        {seat.number}
-                      </button>
-                    ))}
+                  <div key={rowIndex} className={styles.seatRowWrapper}>
+                    <div className={styles.rowNumber}>{row.row}</div>
+                    
+                    {/* Left seats (A, C for business | A, B, C for economy) */}
+                    <div className={styles.seatsLeftGroup}>
+                      {isBusiness ? (
+                        <>
+                          <button
+                            className={`${styles.seat} ${row.seats.A.isBooked ? styles.seatBooked : ''} ${
+                              Object.values(selectedSeats).includes(row.seats.A.number) ? styles.seatSelected : ''
+                            }`}
+                            onClick={() => {
+                              if (!row.seats.A.isBooked) {
+                                const passengerIdx = Object.entries(selectedSeats).find(([_, s]) => s === row.seats.A.number)?.[0];
+                                if (passengerIdx !== undefined) {
+                                  handleSeatClick(row.seats.A.number, parseInt(passengerIdx));
+                                } else {
+                                  const unassigned = passengerData.findIndex((_, i) => !selectedSeats[i] || selectedSeats[i] === null);
+                                  if (unassigned >= 0) handleSeatClick(row.seats.A.number, unassigned);
+                                }
+                              }
+                            }}
+                            disabled={row.seats.A.isBooked}
+                            title={row.seats.A.number}
+                          >
+                            {row.seats.A.number}
+                          </button>
+                          <button
+                            className={`${styles.seat} ${row.seats.C.isBooked ? styles.seatBooked : ''} ${
+                              Object.values(selectedSeats).includes(row.seats.C.number) ? styles.seatSelected : ''
+                            }`}
+                            onClick={() => {
+                              if (!row.seats.C.isBooked) {
+                                const passengerIdx = Object.entries(selectedSeats).find(([_, s]) => s === row.seats.C.number)?.[0];
+                                if (passengerIdx !== undefined) {
+                                  handleSeatClick(row.seats.C.number, parseInt(passengerIdx));
+                                } else {
+                                  const unassigned = passengerData.findIndex((_, i) => !selectedSeats[i] || selectedSeats[i] === null);
+                                  if (unassigned >= 0) handleSeatClick(row.seats.C.number, unassigned);
+                                }
+                              }
+                            }}
+                            disabled={row.seats.C.isBooked}
+                            title={row.seats.C.number}
+                          >
+                            {row.seats.C.number}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            className={`${styles.seat} ${row.seats.A.isBooked ? styles.seatBooked : ''} ${
+                              Object.values(selectedSeats).includes(row.seats.A.number) ? styles.seatSelected : ''
+                            }`}
+                            onClick={() => {
+                              if (!row.seats.A.isBooked) {
+                                const passengerIdx = Object.entries(selectedSeats).find(([_, s]) => s === row.seats.A.number)?.[0];
+                                if (passengerIdx !== undefined) {
+                                  handleSeatClick(row.seats.A.number, parseInt(passengerIdx));
+                                } else {
+                                  const unassigned = passengerData.findIndex((_, i) => !selectedSeats[i] || selectedSeats[i] === null);
+                                  if (unassigned >= 0) handleSeatClick(row.seats.A.number, unassigned);
+                                }
+                              }
+                            }}
+                            disabled={row.seats.A.isBooked}
+                            title={row.seats.A.number}
+                          >
+                            {row.seats.A.number}
+                          </button>
+                          <button
+                            className={`${styles.seat} ${row.seats.B.isBooked ? styles.seatBooked : ''} ${
+                              Object.values(selectedSeats).includes(row.seats.B.number) ? styles.seatSelected : ''
+                            }`}
+                            onClick={() => {
+                              if (!row.seats.B.isBooked) {
+                                const passengerIdx = Object.entries(selectedSeats).find(([_, s]) => s === row.seats.B.number)?.[0];
+                                if (passengerIdx !== undefined) {
+                                  handleSeatClick(row.seats.B.number, parseInt(passengerIdx));
+                                } else {
+                                  const unassigned = passengerData.findIndex((_, i) => !selectedSeats[i] || selectedSeats[i] === null);
+                                  if (unassigned >= 0) handleSeatClick(row.seats.B.number, unassigned);
+                                }
+                              }
+                            }}
+                            disabled={row.seats.B.isBooked}
+                            title={row.seats.B.number}
+                          >
+                            {row.seats.B.number}
+                          </button>
+                          <button
+                            className={`${styles.seat} ${row.seats.C.isBooked ? styles.seatBooked : ''} ${
+                              Object.values(selectedSeats).includes(row.seats.C.number) ? styles.seatSelected : ''
+                            }`}
+                            onClick={() => {
+                              if (!row.seats.C.isBooked) {
+                                const passengerIdx = Object.entries(selectedSeats).find(([_, s]) => s === row.seats.C.number)?.[0];
+                                if (passengerIdx !== undefined) {
+                                  handleSeatClick(row.seats.C.number, parseInt(passengerIdx));
+                                } else {
+                                  const unassigned = passengerData.findIndex((_, i) => !selectedSeats[i] || selectedSeats[i] === null);
+                                  if (unassigned >= 0) handleSeatClick(row.seats.C.number, unassigned);
+                                }
+                              }
+                            }}
+                            disabled={row.seats.C.isBooked}
+                            title={row.seats.C.number}
+                          >
+                            {row.seats.C.number}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    
+                    {/* Aisle */}
+                    <div className={styles.aisle}></div>
+                    
+                    {/* Right seats (D, F for business | D, E, F for economy) */}
+                    <div className={styles.seatsRightGroup}>
+                      {isBusiness ? (
+                        <>
+                          <button
+                            className={`${styles.seat} ${row.seats.D.isBooked ? styles.seatBooked : ''} ${
+                              Object.values(selectedSeats).includes(row.seats.D.number) ? styles.seatSelected : ''
+                            }`}
+                            onClick={() => {
+                              if (!row.seats.D.isBooked) {
+                                const passengerIdx = Object.entries(selectedSeats).find(([_, s]) => s === row.seats.D.number)?.[0];
+                                if (passengerIdx !== undefined) {
+                                  handleSeatClick(row.seats.D.number, parseInt(passengerIdx));
+                                } else {
+                                  const unassigned = passengerData.findIndex((_, i) => !selectedSeats[i] || selectedSeats[i] === null);
+                                  if (unassigned >= 0) handleSeatClick(row.seats.D.number, unassigned);
+                                }
+                              }
+                            }}
+                            disabled={row.seats.D.isBooked}
+                            title={row.seats.D.number}
+                          >
+                            {row.seats.D.number}
+                          </button>
+                          <button
+                            className={`${styles.seat} ${row.seats.F.isBooked ? styles.seatBooked : ''} ${
+                              Object.values(selectedSeats).includes(row.seats.F.number) ? styles.seatSelected : ''
+                            }`}
+                            onClick={() => {
+                              if (!row.seats.F.isBooked) {
+                                const passengerIdx = Object.entries(selectedSeats).find(([_, s]) => s === row.seats.F.number)?.[0];
+                                if (passengerIdx !== undefined) {
+                                  handleSeatClick(row.seats.F.number, parseInt(passengerIdx));
+                                } else {
+                                  const unassigned = passengerData.findIndex((_, i) => !selectedSeats[i] || selectedSeats[i] === null);
+                                  if (unassigned >= 0) handleSeatClick(row.seats.F.number, unassigned);
+                                }
+                              }
+                            }}
+                            disabled={row.seats.F.isBooked}
+                            title={row.seats.F.number}
+                          >
+                            {row.seats.F.number}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            className={`${styles.seat} ${row.seats.D.isBooked ? styles.seatBooked : ''} ${
+                              Object.values(selectedSeats).includes(row.seats.D.number) ? styles.seatSelected : ''
+                            }`}
+                            onClick={() => {
+                              if (!row.seats.D.isBooked) {
+                                const passengerIdx = Object.entries(selectedSeats).find(([_, s]) => s === row.seats.D.number)?.[0];
+                                if (passengerIdx !== undefined) {
+                                  handleSeatClick(row.seats.D.number, parseInt(passengerIdx));
+                                } else {
+                                  const unassigned = passengerData.findIndex((_, i) => !selectedSeats[i] || selectedSeats[i] === null);
+                                  if (unassigned >= 0) handleSeatClick(row.seats.D.number, unassigned);
+                                }
+                              }
+                            }}
+                            disabled={row.seats.D.isBooked}
+                            title={row.seats.D.number}
+                          >
+                            {row.seats.D.number}
+                          </button>
+                          <button
+                            className={`${styles.seat} ${row.seats.E.isBooked ? styles.seatBooked : ''} ${
+                              Object.values(selectedSeats).includes(row.seats.E.number) ? styles.seatSelected : ''
+                            }`}
+                            onClick={() => {
+                              if (!row.seats.E.isBooked) {
+                                const passengerIdx = Object.entries(selectedSeats).find(([_, s]) => s === row.seats.E.number)?.[0];
+                                if (passengerIdx !== undefined) {
+                                  handleSeatClick(row.seats.E.number, parseInt(passengerIdx));
+                                } else {
+                                  const unassigned = passengerData.findIndex((_, i) => !selectedSeats[i] || selectedSeats[i] === null);
+                                  if (unassigned >= 0) handleSeatClick(row.seats.E.number, unassigned);
+                                }
+                              }
+                            }}
+                            disabled={row.seats.E.isBooked}
+                            title={row.seats.E.number}
+                          >
+                            {row.seats.E.number}
+                          </button>
+                          <button
+                            className={`${styles.seat} ${row.seats.F.isBooked ? styles.seatBooked : ''} ${
+                              Object.values(selectedSeats).includes(row.seats.F.number) ? styles.seatSelected : ''
+                            }`}
+                            onClick={() => {
+                              if (!row.seats.F.isBooked) {
+                                const passengerIdx = Object.entries(selectedSeats).find(([_, s]) => s === row.seats.F.number)?.[0];
+                                if (passengerIdx !== undefined) {
+                                  handleSeatClick(row.seats.F.number, parseInt(passengerIdx));
+                                } else {
+                                  const unassigned = passengerData.findIndex((_, i) => !selectedSeats[i] || selectedSeats[i] === null);
+                                  if (unassigned >= 0) handleSeatClick(row.seats.F.number, unassigned);
+                                }
+                              }
+                            }}
+                            disabled={row.seats.F.isBooked}
+                            title={row.seats.F.number}
+                          >
+                            {row.seats.F.number}
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -472,7 +742,18 @@ function Step2SeatSelection({ flight, passengerData, onNext, onBack }) {
           {passengerData.map((p, i) => (
             <div key={i} className={styles.passengerSeatRow}>
               <span>Passenger {i + 1}</span>
-              <div className={styles.seatDisplay}>{selectedSeats[i] || 'Not assigned'}</div>
+              <div className={`${styles.seatDisplay} ${selectedSeats[i] ? styles.seatDisplayAssigned : ''}`}>
+                {selectedSeats[i] || 'Not assigned'}
+              </div>
+              {selectedSeats[i] && (
+                <button
+                  className={styles.clearSeatBtn}
+                  onClick={() => handleSeatClick(selectedSeats[i], i)}
+                  title="Click to deselect"
+                >
+                  ✕
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -502,18 +783,18 @@ function Step3Review({ flight, passengerData, selectedSeats, onConfirm, onBack, 
     try {
       // Prepare booking data
       const bookings = passengerData.map((p, i) => ({
-        passengerId: p.savedPassengerId,
-        flightId: flight.id || flight.Id,
-        seatNumber: selectedSeats[i],
-        hasLuggage: false,
-        hasFood: false,
-        isBusiness: false,
+        PassengerId: p.savedPassengerId,
+        FlightId: flight.id || flight.Id,
+        SeatNumber: selectedSeats[i],
+        HasLuggage: false,
+        HasFood: false,
+        IsBusiness: false,
       }));
 
       // Create order
       const response = await apiClient.post('/orders', {
-        userId: user.id,
-        bookings: bookings,
+        UserId: user.id,
+        Bookings: bookings,
       });
 
       const orderId = response.data || response.data.id;
@@ -770,13 +1051,3 @@ export function BookingPage() {
     </AppShell>
   );
 }
-
-
-
-
-
-
-
-
-
-
