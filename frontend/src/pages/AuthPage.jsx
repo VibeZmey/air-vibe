@@ -6,6 +6,7 @@ import { registerUser, loginUser } from '../api/auth';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Spinner } from '../components/ui/Spinner';
+import {useNavigate} from "react-router-dom";
 import styles from './AuthPage.module.css';
 
 const initialValues = {
@@ -59,6 +60,7 @@ function validate(values, mode) {
 }
 
 export function AuthPage() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState('login');
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
@@ -225,9 +227,27 @@ export function AuthPage() {
         </form>
 
         <div className={styles.footerLink}>
-          <Link to={ROUTES.home}>Go to home</Link>
+          <button 
+            onClick={() => navigate(ROUTES.home)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#6d28d9',
+              fontWeight: 700,
+              textDecoration: 'none',
+              cursor: 'pointer',
+              padding: 0,
+              font: 'inherit'
+            }}
+            onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+            onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+          >
+            Go to home
+          </button>
         </div>
       </section>
     </div>
   );
 }
+
+

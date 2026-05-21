@@ -9,6 +9,21 @@ function cleanLoginPart(value) {
     .slice(0, 32);
 }
 
+function decodeJWT(token) {
+  if (!token) return null;
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    
+    const payload = parts[1];
+    const decoded = JSON.parse(atob(payload));
+    return decoded;
+  } catch (error) {
+    console.error('Failed to decode JWT:', error);
+    return null;
+  }
+}
+
 export function buildLoginFromEmail(email) {
   const [localPart = 'user'] = String(email).split('@');
   const safeLocalPart = cleanLoginPart(localPart) || 'user';
@@ -49,13 +64,32 @@ export async function confirmEmail(token) {
     refreshToken: data.refreshToken,
   });
 
+  // Extract role from JWT and set user
+  const jwtPayload = decodeJWT(data.accessToken);
+  if (jwtPayload) {
+    useAuthStore.getState().setUser({
+      role: jwtPayload.role,
+      email: jwtPayload.email,
+      userId: jwtPayload.userId,
+    });
+  }
+
   return response;
 }
 
 export async function getMe() {
   const response = await apiClient.get('/users/me');
-  useAuthStore.getState().setUser(response.data);
-  return response.data;
+  const userData = response.data;
+  
+  // Add role from JWT token
+  const state = useAuthStore.getState();
+  const jwtPayload = decodeJWT(state.accessToken);
+  if (jwtPayload && jwtPayload.role) {
+    userData.role = jwtPayload.role;
+  }
+  
+  useAuthStore.getState().setUser(userData);
+  return userData;
 }
 
 export async function restoreSession() {
@@ -71,4 +105,7 @@ export async function restoreSession() {
   useAuthStore.getState().setStatus('authenticated');
   return useAuthStore.getState().user;
 }
+
+
+
 

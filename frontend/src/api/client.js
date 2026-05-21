@@ -59,19 +59,31 @@ apiClient.interceptors.request.use((request) => {
     // Date.parse returns NaN for invalid
     return !Number.isNaN(Date.parse(value));
   }
-
   function convertValue(v) {
     if (v instanceof Date) return v.toISOString();
     if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
-      // Treat date-only values as UTC midnight
       return `${v}T00:00:00Z`;
-    }
-    if (typeof v === 'string' && !Number.isNaN(Date.parse(v))) {
-      const d = new Date(v);
-      return d.toISOString();
     }
     return v;
   }
+
+  // function convertValue(v) {
+  //   console.log(`${v} convert value`);
+  //   if (v instanceof Date) return v.toISOString();
+  //   if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+  //     // Treat date-only values as UTC midnight
+  //     console.log(`${v}T00:00:00Z converted value`);
+  //     return `${v}T00:00:00Z`;
+  //   }
+  //   if (typeof v === 'string' && !Number.isNaN(Date.parse(v))) {
+  //     const d = new Date(v);
+  //     console.log(d);
+  //     console.log(`${d} converted date`);
+  //     return d.toISOString();
+  //   }
+  //   console.log(`${v} no convert value`);
+  //   return v;
+  // }
 
   function convertDatesRecursively(obj) {
     if (obj == null) return obj;
