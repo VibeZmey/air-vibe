@@ -5,8 +5,22 @@ import { AirportAutosuggest } from '../components/ui/AirportAutosuggest';
 import { Button } from '../components/ui/Button';
 import styles from './SearchPage.module.css';
 import { apiClient } from '../api/client';
+import { useAuthStore } from '../store/authStore';
 
 const PAGE_SIZE = 6;
+
+// Enum mappings for sorting
+const SORT_FIELD_ENUM = {
+  Price: 0,
+  DepartureTime: 1,
+  ArrivalTime: 2,
+  Duration: 3,
+};
+
+const SORT_DIRECTION_ENUM = {
+  Ascending: 0,
+  Descending: 1,
+};
 
 function getSegmentValue(segment, keyLower, keyUpper) {
   if (!segment) {
@@ -207,6 +221,7 @@ function renderSegmentCard(segment, label) {
 export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const isAuthenticated = useAuthStore((state) => Boolean(state.accessToken));
   const [origin, setOrigin] = useState(() => searchParams.get('from') || '');
   const [destination, setDestination] = useState(() => searchParams.get('to') || '');
   const [departureDate, setDepartureDate] = useState(() => searchParams.get('departure') || '');
@@ -394,8 +409,8 @@ export function SearchPage() {
       DepartureHourTo: departureWindowMap[departureTimeSlot].to,
       AirlineId: airlineId || undefined,
       IsBusinessOnly: cabinClass === 'Business',
-      SortBy: sortBy,
-      SortDirection: sortDirection,
+      SortBy: SORT_FIELD_ENUM[sortBy] ?? 0,
+      SortDirection: SORT_DIRECTION_ENUM[sortDirection] ?? 0,
       PageSize: PAGE_SIZE,
       PageNumber: nextPageNumber,
     };
@@ -460,6 +475,17 @@ export function SearchPage() {
   }
 
   async function handleFlightClick(flight) {
+    const isAuthenticated = useAuthStore.getState().accessToken;
+    
+    if (!isAuthenticated) {
+      setError('Please sign in or register to book a flight');
+      // Redirect to auth page after a delay
+      setTimeout(() => {
+        navigate('/auth');
+      }, 2000);
+      return;
+    }
+
     const flightId = flight.id || flight.Id;
     setBookingLoading(true);
     setError('');
