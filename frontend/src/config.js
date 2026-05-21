@@ -2,8 +2,8 @@
 
 export const ROUTES = {
   auth: '/auth',
-  authConfirm: '/auth/confirm-email',
-  authConfirmAlias: '/auth/email-confirm',
+  authConfirm: '/auth/email-confirm',
+  authConfirmAlias: '/auth/confirm-email',
   home: '/search',
   profile: '/profile',
 };

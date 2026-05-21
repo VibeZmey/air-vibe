@@ -8,6 +8,7 @@ import { SearchPage } from './pages/SearchPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { BookingPage } from './pages/BookingPage';
 import { OrderConfirmationPage } from './pages/OrderConfirmationPage';
+import { AdminPage } from './pages/AdminPage';
 import { restoreSession } from './api/auth';
 import { useAuthStore } from './store/authStore';
 import { GuestRoute } from './routes/GuestRoute';
@@ -64,17 +65,23 @@ export default function App() {
           </Route>
           <Route path={ROUTES.authConfirm} element={<ConfirmEmailPage />} />
           <Route path={ROUTES.authConfirmAlias} element={<ConfirmEmailPage />} />
+          {/* SearchPage is public - guests can search flights */}
+          <Route path={ROUTES.home} element={<SearchPage />} />
+          {/* Protected routes - require authentication */}
           <Route element={<ProtectedRoute />}>
-            <Route path={ROUTES.home} element={<SearchPage />} />
             <Route path={ROUTES.profile} element={<ProfilePage />} />
             <Route path="/booking/:flightId" element={<BookingPage />} />
             <Route path="/order-confirmation/:orderId" element={<OrderConfirmationPage />} />
+            <Route path="/admin" element={<AdminPage />} />
           </Route>
           <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
         </Routes>
     </>
   );
 }
+
+
+
 
 
 
