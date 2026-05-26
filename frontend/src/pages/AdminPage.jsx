@@ -93,12 +93,10 @@ function OrdersTab() {
         <div className={styles.empty}>No orders found.</div>
       ) : (
         <div className={styles.ordersList}>
-          {filteredOrders.map((order) => {
+           {filteredOrders.map((order) => {
             const orderId = order.orderId || order.id;
-            const shortId = orderId ? orderId.split('-')[0] : 'N/A';
             const status = ORDER_STATUS[order.status] || 'Unknown';
             const totalPrice = order.totalPrice || 0;
-            const userEmail = order.userEmail || 'Unknown';
             const createdAt = order.createdAt
               ? new Date(order.createdAt).toLocaleDateString('en-US', {
                   year: 'numeric',
@@ -106,13 +104,22 @@ function OrdersTab() {
                   day: 'numeric',
                 })
               : 'Unknown';
+            
+            // Extract flight and passenger info from bookings
+            const firstBooking = order.bookings && order.bookings.length > 0 ? order.bookings[0] : null;
+            const flightInfo = firstBooking?.flight;
+            const departureCity = flightInfo?.fromAirport?.city || 'Unknown';
+            const arrivalCity = flightInfo?.toAirport?.city || 'Unknown';
+            const passengersCount = order.bookings?.length || 0;
 
             return (
               <div key={orderId} className={styles.orderCard}>
                 <div className={styles.orderHeader}>
                   <div className={styles.orderInfo}>
-                    <div className={styles.orderId}>Order #{shortId}</div>
-                    <div className={styles.userEmail}>{userEmail}</div>
+                    <div className={styles.orderId}>Order #{orderId.substring(0, 8)}</div>
+                    <div className={styles.flightRoute}>
+                      {departureCity} → {arrivalCity} • {passengersCount} passenger{passengersCount !== 1 ? 's' : ''}
+                    </div>
                   </div>
                   <div className={styles.orderMeta}>
                     <span className={`${styles.status} ${styles['status' + status]}`}>{status}</span>
@@ -140,6 +147,15 @@ function OrdersTab() {
                           {updatingStatus === orderId ? 'Updating...' : 'Cancel'}
                         </button>
                       </>
+                    )}
+                    {status === 'Confirmed' && (
+                      <button
+                        className={styles.cancelBtn}
+                        onClick={() => updateOrderStatus(orderId, 'cancel')}
+                        disabled={updatingStatus === orderId}
+                      >
+                        {updatingStatus === orderId ? 'Updating...' : 'Cancel'}
+                      </button>
                     )}
                   </div>
                 </div>

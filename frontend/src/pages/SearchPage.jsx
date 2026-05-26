@@ -476,7 +476,7 @@ export function SearchPage() {
 
   async function handleFlightClick(flight) {
     const isAuthenticated = useAuthStore.getState().accessToken;
-    
+
     if (!isAuthenticated) {
       setError('Please sign in or register to book a flight');
       // Redirect to auth page after a delay
@@ -870,10 +870,6 @@ export function SearchPage() {
                   </div>
                 </div>
               </div>
-
-              <label>Airline ID</label>
-              <input type="text" value={airlineId} onChange={(event) => setAirlineId(event.target.value)} placeholder="Optional GUID" />
-
               <label>Sort by</label>
               <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
                 {sortFields.map((field) => (
@@ -954,5 +950,3 @@ export function SearchPage() {
     </AppShell>
   );
 }
-
-
