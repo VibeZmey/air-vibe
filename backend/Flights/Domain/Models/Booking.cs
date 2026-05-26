@@ -1,7 +1,5 @@
 ﻿using Flights.Domain.Dto;
-using Flights.Domain.Events;
 using Flights.Domain.Exceptions;
-using Flights.Domain.Interfaces;
 
 namespace Flights.Domain.Models;
 
@@ -59,9 +57,6 @@ public class Booking
         decimal price = flight.FlightPrice;
         switch (passenger.Type)
         {
-            case PassengerType.Kid:
-                price /= 2;
-                break;
             case PassengerType.Baby:
                 price = 0;
                 break;

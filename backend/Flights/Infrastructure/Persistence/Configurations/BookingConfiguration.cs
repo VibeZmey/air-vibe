@@ -12,6 +12,10 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
             .HasIndex(b => b.FlightId) 
             .HasDatabaseName("IX_Flight");  
         
+        builder
+            .HasIndex(b => b.OrderId)
+            .HasDatabaseName("IX_Order");
+        
         builder.HasKey(b => b.Id);
     }
 }
