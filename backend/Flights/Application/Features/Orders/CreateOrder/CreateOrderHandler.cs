@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Flights.Application.Features.Orders.CreateOrder;
 
-public class CreateOrderHandler : IRequestHandler<CreateOrderCommand, Unit>
+public class CreateOrderHandler : IRequestHandler<CreateOrderCommand, Guid>
 {
     private readonly IFlightRepository _flightRepo;
     private readonly IPassengerRepository _passengerRepo;
@@ -24,17 +24,17 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderCommand, Unit>
         _orderRepo = orderRepository;
     }
     
-    public async Task<Unit> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
+    public async Task<Guid> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
     {
-        var flight = await _flightRepo
-            .GetByIdWithDetailsAsync(request.FlightId, cancellationToken);
-        if(flight is null)
-            throw new ApplicationException("Flight not found");
-
-        var order = Order.Create(flight.Id, request.UserId);
+        var order = Order.Create(request.UserId);
         
         foreach (var data in request.Bookings)
         {
+            var flight = await _flightRepo
+                .GetByIdAsync(data.FlightId, cancellationToken);
+            if(flight is null)
+                throw new ApplicationException("Flight not found");
+            
             var passenger = await _passengerRepo
                 .GetByIdAsync(data.PassengerId, cancellationToken);
             if(passenger is null)
@@ -62,6 +62,6 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderCommand, Unit>
         
         await _orderRepo.AddAsync(order, cancellationToken);
         await _unitOfWork.SaveAsync(cancellationToken);
-        return Unit.Value;
+        return order.Id;
     }
 }

@@ -2,10 +2,9 @@
 
 namespace Flights.Application.Features.Orders.CreateOrder;
 
-public class CreateOrderCommand : IRequest<Unit>
+public class CreateOrderCommand : IRequest<Guid>
 {
     public Guid UserId { get; set; }
-    public Guid FlightId { get; set; }
     public List<BookingData> Bookings { get; set; }
 }
 
@@ -16,4 +15,5 @@ public record BookingData
     public bool HasLuggage { get; set; } = false;
     public bool HasFood { get; set; } = false;
     public bool IsBusiness { get; set; } = false; 
+    public Guid FlightId { get; set; }
 }

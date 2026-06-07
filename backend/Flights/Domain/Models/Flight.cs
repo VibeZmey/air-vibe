@@ -1,11 +1,8 @@
-﻿using System.Text.Json.Serialization;
-using Flights.Domain.Dto;
-using Flights.Domain.Events;
-using Flights.Domain.Interfaces;
+﻿using Flights.Domain.Dto;
 
 namespace Flights.Domain.Models;
 
-public class Flight : IDomainEventEmitter
+public class Flight
 {
     public Guid Id { get; set; }
     public string Number { get; set; } = string.Empty;
@@ -28,28 +25,13 @@ public class Flight : IDomainEventEmitter
     public int AirplaneId { get; set; }
     public Airplane Airplane { get; set; }
     public ICollection<Booking> Bookings { get; set; } = [];
-    private readonly List<IDomainEvent> _events = [];
-    public IReadOnlyCollection<IDomainEvent> Events => _events.AsReadOnly();
-    public void ClearEvents() => _events.Clear();
-    
+
     public void ApplyScheduledTransitions(DateTime now)
     {
         if (Status == FlightStatus.Scheduled && 
             now.AddHours(24) >= DepartureTime && now < DepartureTime)
         {
             Status = FlightStatus.CheckIn;
-            //TODO: добавить ивент на отправку уведомления на сайте и на почту, так же и для всех остальных
-            _events.Add(new CheckInOpenedEvent()
-            {
-                FLightId = Id,
-                DepartureTime = DepartureTime,
-                StartTime = DepartureTime.AddHours(-24),
-                EndTime = DepartureTime.AddMinutes(-30),
-                FlightNumber = Number,
-                NewStatus = Status,
-                CreatedAt = DateTime.UtcNow
-            });
-            Console.WriteLine(nameof(FlightStatus.CheckIn));
             return;
         }
 
@@ -58,7 +40,6 @@ public class Flight : IDomainEventEmitter
         {
             
             Status = FlightStatus.Boarding;
-            Console.WriteLine(nameof(FlightStatus.Boarding));
             return;
         }
 
@@ -66,7 +47,6 @@ public class Flight : IDomainEventEmitter
             now >= DepartureTime && now < ArrivalTime)
         {
             Status = FlightStatus.Departed;
-            Console.WriteLine(nameof(FlightStatus.Departed));
             return;
         }
 
@@ -74,8 +54,6 @@ public class Flight : IDomainEventEmitter
             now >= ArrivalTime)
         {
             Status = FlightStatus.Arrived;
-            Console.WriteLine(nameof(FlightStatus.Arrived));
-            return;
         }
     }
     
@@ -101,12 +79,14 @@ public class Flight : IDomainEventEmitter
                 City = flight.FromAirport.City,
                 CountryName = flight.FromAirport.CountryName,
                 Code = flight.FromAirport.Code,
+                TimezoneOffset = flight.FromAirport.TimezoneOffset
             },
             ToAirport = new AirportDto()
             {
                 City = flight.ToAirport.City,
                 CountryName = flight.ToAirport.CountryName,
                 Code = flight.ToAirport.Code,
+                TimezoneOffset = flight.ToAirport.TimezoneOffset
             },
             Airplane = new AirplaneDto()
             {
@@ -146,12 +126,14 @@ public class Flight : IDomainEventEmitter
                 City = flight.FromAirport.City,
                 CountryName = flight.FromAirport.CountryName,
                 Code = flight.FromAirport.Code,
+                TimezoneOffset = flight.FromAirport.TimezoneOffset
             },
             ToAirport = new AirportDto()
             {
                 City = flight.ToAirport.City,
                 CountryName = flight.ToAirport.CountryName,
                 Code = flight.ToAirport.Code,
+                TimezoneOffset = flight.ToAirport.TimezoneOffset
             },
         };
     }
@@ -172,12 +154,14 @@ public class Flight : IDomainEventEmitter
                 City = flight.FromAirport.City,
                 CountryName = flight.FromAirport.CountryName,
                 Code = flight.FromAirport.Code,
+                TimezoneOffset = flight.FromAirport.TimezoneOffset
             },
             ToAirport = new AirportDto()
             {
                 City = flight.ToAirport.City,
                 CountryName = flight.ToAirport.CountryName,
                 Code = flight.ToAirport.Code,
+                TimezoneOffset = flight.ToAirport.TimezoneOffset
             },
         };
     }

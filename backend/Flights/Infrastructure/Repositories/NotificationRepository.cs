@@ -1,6 +1,8 @@
-﻿using Flights.Domain.Interfaces;
+﻿using Flights.Domain.Dto;
+using Flights.Domain.Interfaces;
 using Flights.Domain.Models;
 using Flights.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace Flights.Infrastructure.Repositories;
 
@@ -13,15 +15,25 @@ public class NotificationRepository : INotificationRepository
         _context = context;
     }
 
+    public async Task<Notification?> GetByIdAsync(Guid notificationId, CancellationToken ct = default)
+    {
+        return await _context.Notifications
+            .FirstOrDefaultAsync(n => n.Id == notificationId, ct);
+    }
+
     public async Task AddAsync(Notification notification, CancellationToken ct = default)
     {
         await _context.Notifications
             .AddAsync(notification, ct);
     } 
     
-    public Task<IReadOnlyCollection<Notification>> GetByUserId(Guid userId)
+    public async Task<List<NotificationDto>> GetByUserId(Guid userId)
     {
-        throw new NotImplementedException();
+        return _context.Notifications
+            .AsNoTracking()
+            .Where(n => n.UserId == userId)
+            .Select(Notification.ToDto)
+            .ToList();
     }
 
     public async Task AddRangeAsync(IReadOnlyCollection<Notification> notifications, CancellationToken ct = default)

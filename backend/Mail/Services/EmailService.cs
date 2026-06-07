@@ -1,4 +1,6 @@
-﻿using Mail.Options;
+﻿using Mail.Interfaces;
+using Mail.Models;
+using Mail.Options;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
@@ -21,7 +23,7 @@ public class EmailService : IEmailService
         _logger = logger;
     }
 
-    public async Task SendEmailAsync(string to, string subject, string htmlBody)
+    public async Task SendEmailAsync(string to, string subject, string htmlBody, EmailAttachment? attachment = null)
     {
         var message = new MimeMessage();
         
@@ -38,17 +40,23 @@ public class EmailService : IEmailService
             HtmlBody = htmlBody,
             TextBody = StripHtml(htmlBody)
         };
+        if (attachment != null)
+        {
+            bodyBuilder.Attachments.Add(
+                attachment.FileName, 
+                attachment.Content, 
+                ContentType.Parse(attachment.ContentType));
+        }
+
+        
         message.Body = bodyBuilder.ToMessageBody();
 
         try
         {
             using var client = new SmtpClient();
             
-            await client.ConnectAsync(
-                _settings.SmtpHost, 
-                _settings.SmtpPort, 
-                SecureSocketOptions.SslOnConnect);
-            await client.AuthenticateAsync(_settings.SmtpUser, _settings.SmtpPassword);
+            await client.ConnectAsync("smtp.yandex.ru", 465, SecureSocketOptions.SslOnConnect);
+            await client.AuthenticateAsync("ermolnikovivan@yandex.ru", "hvbxazuvlzdltees");
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
             

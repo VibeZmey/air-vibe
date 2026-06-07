@@ -116,10 +116,6 @@ namespace Flights.Migrations
                     b.Property<double>("Longitude")
                         .HasColumnType("double precision");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<int>("TimezoneOffset")
                         .HasColumnType("integer");
 
@@ -173,7 +169,8 @@ namespace Flights.Migrations
                     b.HasIndex("FlightId")
                         .HasDatabaseName("IX_Flight");
 
-                    b.HasIndex("OrderId");
+                    b.HasIndex("OrderId")
+                        .HasDatabaseName("IX_Order");
 
                     b.HasIndex("PassengerId");
 
@@ -326,9 +323,6 @@ namespace Flights.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("FlightId")
-                        .HasColumnType("uuid");
-
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -339,8 +333,6 @@ namespace Flights.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("FlightId");
 
                     b.ToTable("Orders");
                 });
@@ -531,17 +523,6 @@ namespace Flights.Migrations
 
                     b.Navigation("Payload")
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("Flights.Domain.Models.Order", b =>
-                {
-                    b.HasOne("Flights.Domain.Models.Flight", "Flight")
-                        .WithMany()
-                        .HasForeignKey("FlightId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Flight");
                 });
 
             modelBuilder.Entity("Flights.Domain.Models.Airline", b =>

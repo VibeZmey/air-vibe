@@ -26,7 +26,9 @@ public class FlightController : ControllerBase
     {
         return Ok(await _mediator.Send(request, ct));
     }
-
+    
+    
+    
     [HttpGet("{id:guid}")]
     [AllowAnonymous]
     public async Task<ActionResult<FlightDto>> GetFlightById([FromRoute] Guid id, CancellationToken ct = default)

@@ -23,18 +23,6 @@ public class UnitOfWork : IUnitOfWork, IDisposable
 
     public async Task<int> SaveAsync(CancellationToken ct = default)
     {
-        var entries = _context.ChangeTracker
-            .Entries<IDomainEventEmitter>().ToList();
-        
-        foreach (var entry in entries)
-        {
-            foreach (var evt in entry.Entity.Events)
-            {
-                await _mediator.Publish(evt, ct);
-            }
-            entry.Entity.ClearEvents();
-        }
-        
         return await _context.SaveChangesAsync(ct);
     }
 

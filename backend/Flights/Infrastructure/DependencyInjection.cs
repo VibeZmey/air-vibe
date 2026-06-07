@@ -5,11 +5,7 @@ using Flights.Infrastructure.Persistence;
 using Flights.Infrastructure.Repositories;
 using Flights.Infrastructure.Services;
 using Flights.Infrastructure.Workers;
-using GreenPipes;
-using MassTransit;
 using Microsoft.EntityFrameworkCore;
-using RabbitMQ.Client;
-using SharedContracts.Messages;
 
 namespace Flights.Infrastructure;
 
@@ -36,6 +32,7 @@ public static class DependencyInjection
         services.AddHostedService<UpdateFlightStatusWorker>();
         //services.AddHostedService<OutboxWorker>();
         services.AddScoped<IOrderRepository, OrderRepository>();
+        services.AddScoped<IAirportRepository, AirportRepository>();
         
         services.Configure<RabbitMqSettings>(configuration.GetSection("RabbitMq"));
         return services;

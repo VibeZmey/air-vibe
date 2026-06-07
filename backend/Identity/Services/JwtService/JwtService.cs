@@ -60,7 +60,7 @@ internal class JwtService : IJwtService
         
         var res = new JwtResponse()
         {
-            Login = user.Login,
+            UserId = user.Id,
             AccessToken = accessToken,
             ExpiresIn = (int)tokenExpires.Subtract(DateTime.UtcNow).TotalSeconds,
             RefreshToken = await GenerateRefresh(user.Id)

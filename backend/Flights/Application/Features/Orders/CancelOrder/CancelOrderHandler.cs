@@ -21,7 +21,6 @@ public class CancelOrderHandler : IRequestHandler<CancelOrderCommand, Unit>
         var order = await _orderRepo.GetByIdAsync(request.OrderId, cancellationToken);
         if(order is null)
             throw new ApplicationException("Order not found");
-        //TODO: мб чето придумать пока лень 
         order.Cancel();
         await _unitOfWork.SaveAsync(cancellationToken);
         return Unit.Value;

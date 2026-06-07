@@ -9,7 +9,7 @@ using NodaTime;
 namespace Flights.Presentation.Controllers;
 
 [ApiController]
-[Authorize]
+[AllowAnonymous]
 [Route("test")]
 public class TestController
 {
@@ -59,74 +59,111 @@ public class TestController
         await _context.SaveChangesAsync();
     }
     
-
-[HttpPost("flights")]
-public async Task GenerateAirline(int count, string country, string? fromCity, string? toCity, DateTime from, DateTime to, int minuteStep = 60)
-{
-    var airplanes = _context.Airplanes.Include(a => a.Airline).ToList();
-    
-    for (int i = 0; i < count; i++)
+    [HttpPost("flights")]
+    public async Task GenerateFlights(int count, string country, string? fromCity, string? toCity, DateTime from, DateTime to, int minuteStep = 60)
     {
-        var c = await _context.Airports.CountAsync(p => p.CountryName == country);
-        if (c == 0) continue;
-
-        var ap1 = fromCity is null
-            ? await _context.Airports.Where(p => p.CountryName == country)
-                .Skip(Random.Shared.Next(0, c))
-                .FirstOrDefaultAsync()
-            : await _context.Airports.FirstAsync(p => p.CountryName == country && p.City == fromCity);
-
-        var ap2 = toCity is null
-            ? await _context.Airports.Where(p => p.CountryName == country)
-                .Skip(Random.Shared.Next(0, c))
-                .FirstOrDefaultAsync()
-            : await _context.Airports.FirstAsync(p => p.CountryName == country && p.City == toCity);
-
-        if (ap1 is null || ap2 is null) continue;
-
-        var dist = Test.CalculateDistance(ap1.Latitude, ap1.Longitude, ap2.Latitude, ap2.Longitude);
-        var dur = (int)((dist / 800) * 60);
-        if (dur < 60) continue;
-
-        var depUtc = Test.GenerateRoundedDateTimeUtc(from, to, minuteStep);
-        var arrUtc = depUtc.AddMinutes(dur);
-
-
-        decimal fp = dist switch
+        var airplanes = _context.Airplanes.Include(a => a.Airline).ToList();
+        
+        for (int i = 0; i < count; i++)
         {
-            < 1500 => ((decimal)dist) / 15,
-            < 3000 => ((decimal)dist) / 12,
-            < 5000 => ((decimal)dist) / 7,
-            _      => ((decimal)dist) / 5
-        };
+            var allAirportsInCountry = await _context.Airports
+                .Where(p => p.CountryName == country)
+                .ToListAsync();
+            
+            if (allAirportsInCountry.Count == 0) continue;
 
-        var airplane = airplanes[Random.Shared.Next(0, airplanes.Count)];
-        var flight = new Flight
-        {
-            Id = Guid.NewGuid(),
-            Number = Guid.NewGuid().ToString().Substring(0, 4).ToUpper(),
-            FromAirportId = ap1.Id,
-            ToAirportId = ap2.Id,
-            DurationMins = dur,
-            DepartureTime = depUtc,
-            ArrivalTime = arrUtc,
-            FlightPrice = Math.Round(fp, 2) * (decimal)airplane.Airline.Coefficient,
-            LuggagePrice = Random.Shared.Next(25, 100),
-            BusinessPrice = Math.Round(fp * 2, 2) * (decimal)airplane.Airline.Coefficient,
-            FoodPrice = Random.Shared.Next(10, 30),
-            Status = FlightStatus.Scheduled,
-            AirplaneId = airplane.Id,
-            TotalSeats = airplane.Rows * airplane.Columns,
-            BusinessSeats = airplane.BuisnessRows * airplane.BuisnessColumns,
-            BookedBusinessSeats = 0,
-            BookedSeats = 0,
-        };
+            List<Airport> fromAirports;
+            List<Airport> toAirports;
+            
+            if (fromCity is null)
+            {
+                fromAirports = allAirportsInCountry;
+            }
+            else
+            {
+                fromAirports = allAirportsInCountry
+                    .Where(p => p.City == fromCity)
+                    .ToList();
+            }
+            
+            if (toCity is null)
+            {
+                toAirports = allAirportsInCountry;
+            }
+            else
+            {
+                toAirports = allAirportsInCountry
+                    .Where(p => p.City == toCity)
+                    .ToList();
+            }
+            
+            if (fromAirports.Count == 0 || toAirports.Count == 0) continue;
+            
+            var ap1 = fromAirports[Random.Shared.Next(0, fromAirports.Count)];
+            var ap2 = toAirports[Random.Shared.Next(0, toAirports.Count)];
+            
+            if (ap1.Id == ap2.Id) continue;
 
-        await _context.Flights.AddAsync(flight);
+            var dist = Test.CalculateDistance(ap1.Latitude, ap1.Longitude, ap2.Latitude, ap2.Longitude);
+            var cruiseSpeed = 800; 
+            var takeoffLandingTime = 30; 
+            var baseDuration = (int)((dist / cruiseSpeed) * 60) + takeoffLandingTime;
+            
+            if (baseDuration < 45) continue;
+
+            var depUtc = Test.GenerateRoundedDateTimeUtc(from, to, minuteStep);
+            var durationVariation = Random.Shared.Next(-15, 16);
+            var actualDuration = Math.Max(baseDuration + durationVariation, 45);
+            var arrUtc = depUtc.AddMinutes(actualDuration);
+
+            decimal basePrice = dist switch
+            {
+                < 1500 => ((decimal)dist) / 15,
+                < 3000 => ((decimal)dist) / 12,
+                < 5000 => ((decimal)dist) / 7,
+                _      => ((decimal)dist) / 5
+            };
+
+            var airline = airplanes[Random.Shared.Next(0, airplanes.Count)];
+            var priceWithAirline = Math.Round(basePrice * (decimal)airline.Airline.Coefficient, 2);
+            
+            var peakHourMultiplier = Test.GetPeakHourMultiplier(depUtc.Hour);
+            var demandVariation = Random.Shared.Next(80, 121) / 100m;
+            var finalFlightPrice = Math.Round(priceWithAirline * peakHourMultiplier * demandVariation, 2);
+            
+            var luggagePrice = Math.Round(((decimal)dist / 3000) + Random.Shared.Next(15, 40), 2);
+            var foodPrice = Random.Shared.Next(8, 25);
+            var businessMultiplier = 1.8m + (decimal)Random.Shared.Next(0, 30) / 100;
+            var businessPrice = Math.Round(finalFlightPrice * businessMultiplier, 2);
+            
+            var totalSeats = airline.Rows * airline.Columns;
+            var businessSeats = airline.BuisnessRows * airline.BuisnessColumns;
+
+            var flight = new Flight
+            {
+                Id = Guid.NewGuid(),
+                Number = $"{airline.Airline.Name.Substring(0, 2).ToUpper()}{Random.Shared.Next(100, 10000)}",
+                FromAirportId = ap1.Id,
+                ToAirportId = ap2.Id,
+                DurationMins = actualDuration,
+                DepartureTime = depUtc,
+                ArrivalTime = arrUtc,
+                FlightPrice = finalFlightPrice,
+                LuggagePrice = luggagePrice,
+                BusinessPrice = businessPrice,
+                FoodPrice = foodPrice,
+                Status = FlightStatus.Scheduled,
+                AirplaneId = airline.Id,
+                TotalSeats = totalSeats,
+                BusinessSeats = businessSeats,
+            };
+
+            await _context.Flights.AddAsync(flight);
+        }
+
+        await _context.SaveChangesAsync();
     }
 
-    await _context.SaveChangesAsync();
-}
     [HttpDelete("flights")]
     public async Task DeleteFlights()
     {
@@ -138,6 +175,20 @@ public async Task GenerateAirline(int count, string country, string? fromCity, s
     public async Task DeleteOutbox()
     {
         _context.OutboxMessages.RemoveRange(_context.OutboxMessages);
+        await _context.SaveChangesAsync();
+    }
+
+    [HttpDelete("notifications")]
+    public async Task DeleteNotifications()
+    {
+        _context.Notifications.RemoveRange(_context.Notifications);
+        await _context.SaveChangesAsync();
+    }
+    
+    [HttpDelete("orders")]
+    public async Task DeleteOrders()
+    {
+        _context.Orders.RemoveRange(_context.Orders);
         await _context.SaveChangesAsync();
     }
 }
@@ -196,6 +247,20 @@ public class Test
     private static double ToRadians(double degrees)
     {
         return degrees * Math.PI / 180.0;
+    }
+    
+    public static decimal GetPeakHourMultiplier(int hour)
+    {
+        return hour switch
+        {
+            >= 6 and < 9 => 1.3m,
+            >= 9 and < 12 => 1.1m,
+            >= 12 and < 14 => 1.0m,
+            >= 14 and < 17 => 1.05m,
+            >= 17 and < 20 => 1.25m,
+            >= 20 and < 22 => 1.15m,
+            _ => 0.85m
+        };
     }
 
 }

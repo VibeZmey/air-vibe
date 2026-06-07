@@ -4,14 +4,15 @@ namespace Flights.Infrastructure.Common;
 
 public static class CacheKeys
 {
-    private const string FlightsSearchPrefix = "flights:search:";
-
+    public static string CitiesStartWith(string startWith)
+        => $"cities:startwith:{startWith}:";
+    
     public static string AirportsByCityKey(string city)
         => $"airports:city:{city}";
     
     public static string FlightsByFilterKey(SearchFlightsQuery query)
     {
-        return $"{FlightsSearchPrefix}" +
+        return $"flights:search:" +
                $"{query.DepartureDate:yyyy-MM-dd}:" +
                $"{query.ReturnDate:yyyy-MM-dd}:" +
                $"{query.OriginCity}:" +

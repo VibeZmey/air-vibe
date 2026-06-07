@@ -1,14 +1,18 @@
 using System.Security.Cryptography;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Confluent.Kafka;
 using Identity;
 using Identity.Data.Context;
 using Identity.Options;
 using Identity.Services.EmailTokenService;
 using Identity.Services.JwtService;
+using Identity.Services.Publishers;
 using Identity.Services.UserService;
-using MassTransit;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,27 +61,35 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddApiAuthentication(builder.Configuration, builder.Environment);
-builder.Services.AddMassTransit(x =>
-{
-    x.UsingRabbitMq((ctx, cfg) =>
-    {
-        var section = builder.Configuration.GetSection("RabbitMq");
-        cfg.Host(
-            section["HostName"] ?? "rabbitmq",
-            section["VirtualHost"] ?? "/",
-            h =>
-            {
-                h.Username(section["UserName"] ?? "guest");
-                h.Password(section["Password"] ?? "guest");
-            });
-    });
-});
 
-builder.Logging.AddFilter("MassTransit", LogLevel.Debug);
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo("/app/Keys")) 
     .SetApplicationName("IdentityService");
 builder.Services.AddScoped<IEmailTokenService, EmailTokenService>();
+
+
+builder.Services.AddSingleton(new ProducerConfig
+{
+    BootstrapServers = builder.Configuration["Kafka:BootstrapServers"],
+    Acks = Acks.All,
+    EnableIdempotence = true
+});
+
+builder.Services.AddSingleton<IProducer<string, string>>(sp =>
+{
+    var cfg = sp.GetRequiredService<ProducerConfig>();
+    return new ProducerBuilder<string, string>(cfg).Build();
+});
+builder.Services.AddSingleton<IPublisher, Publisher>();
+builder.Services.AddSingleton(new JsonSerializerOptions
+{
+    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+});
+
+builder.Host.UseSerilog((context, services, configuration) =>
+    configuration.ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services));
 
 var app = builder.Build();
 

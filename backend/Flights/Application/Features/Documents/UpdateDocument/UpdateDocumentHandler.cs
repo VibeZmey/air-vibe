@@ -32,8 +32,6 @@ public class UpdateDocumentHandler
         if(document is null)
             throw new ArgumentException($"Document not found");
         
-        _logger.LogInformation($"Updating document {request.Series is null}");
-
         Document.Update(
             document,
             request.FirstName,

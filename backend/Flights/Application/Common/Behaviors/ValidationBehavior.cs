@@ -4,11 +4,9 @@ using FluentValidation.Results;
 
 namespace Flights.Application.Common.Behaviors;
 
-public class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validators)
-    : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
+public class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validators) 
+    : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>
 {
-
     public Task<TResponse> Handle(TRequest request,CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
     {
         ValidationContext<TRequest> context = new ValidationContext<TRequest>(request);

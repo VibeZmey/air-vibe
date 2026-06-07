@@ -1,0 +1,43 @@
+﻿{
+  "boardingPasses": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "passengerFirstName": "John",
+      "passengerMiddleName": "Michael",
+      "passengerLastName": "Doe",
+      "seatNumber": "12A",
+      "price": 450.00,
+      "hasLuggage": true,
+      "hasFood": true,
+      "isBusiness": false,
+      "status": "Confirmed",
+      "flightNumber": "BA001",
+      "departureTime": "2026-05-20T10:30:00Z",
+      "arrivalTime": "2026-05-20T14:45:00Z",
+      "departureCity": "London",
+      "arrivalCity": "New York",
+      "airplaneModel": "Boeing 787 Dreamliner",
+      "bookingCreatedAt": "2026-05-01T09:00:00Z"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "passengerFirstName": "Jane",
+      "passengerMiddleName": null,
+      "passengerLastName": "Smith",
+      "seatNumber": "12B",
+      "price": 225.00,
+      "hasLuggage": false,
+      "hasFood": true,
+      "isBusiness": true,
+      "status": "Confirmed",
+      "flightNumber": "BA001",
+      "departureTime": "2026-05-20T10:30:00Z",
+      "arrivalTime": "2026-05-20T14:45:00Z",
+      "departureCity": "London",
+      "arrivalCity": "New York",
+      "airplaneModel": "Boeing 787 Dreamliner",
+      "bookingCreatedAt": "2026-05-01T09:15:00Z"
+    }
+  ]
+}
+

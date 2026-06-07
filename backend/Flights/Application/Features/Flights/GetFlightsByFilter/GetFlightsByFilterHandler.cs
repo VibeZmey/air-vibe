@@ -26,10 +26,11 @@ public class GetFlightsByFilterHandler :
         var flights = await _cacheService.GetAsync<IReadOnlyCollection<GetFlightsByFilterDto>>(
             CacheKeys.FlightsByFilterKey(query), 
             cancellationToken);
+        
         if (flights is null)
         {
             
-            flights = await _flightRepo.GetFlightsByFilter(query, cancellationToken);
+            flights = await _flightRepo.GetFlightsByFilterAsync(query, cancellationToken);
             await _cacheService.SetAsync(
                 CacheKeys.FlightsByFilterKey(query), flights, 
                 TimeSpan.FromMinutes(3), cancellationToken);

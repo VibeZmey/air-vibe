@@ -1,4 +1,5 @@
 ﻿using System.Text.Encodings.Web;
+using Mail.Interfaces;
 
 namespace Mail.Services;
 

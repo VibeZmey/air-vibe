@@ -1,18 +1,58 @@
-version: '3.8'
-
 services:
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID}
+      KAFKA_PROCESS_ROLES: ${KAFKA_PROCESS_ROLES}
+      KAFKA_NODE_ID: ${KAFKA_NODE_ID}
+      KAFKA_LISTENERS: ${KAFKA_LISTENERS}
+      KAFKA_ADVERTISED_LISTENERS: ${KAFKA_ADVERTISED_LISTENERS}
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: ${KAFKA_LISTENER_SECURITY_PROTOCOL_MAP}
+      KAFKA_INTER_BROKER_LISTENER_NAME: ${KAFKA_INTER_BROKER_LISTENER_NAME}
+      KAFKA_CONTROLLER_LISTENER_NAMES: ${KAFKA_CONTROLLER_LISTENER_NAMES}
+      KAFKA_CONTROLLER_QUORUM_VOTERS: ${KAFKA_CONTROLLER_QUORUM_VOTERS}
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: ${KAFKA_AUTO_CREATE_TOPICS_ENABLE}
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: ${KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR}
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: ${KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR}
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: ${KAFKA_TRANSACTION_STATE_LOG_MIN_ISR}
+      KAFKA_ZOOKEEPER_CONNECT: ${KAFKA_ZOOKEEPER_CONNECT}
+    volumes:
+      - ${KAFKA_DATA_VOLUME}:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "${KAFKA_UI_EXTERNAL_PORT}:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: ${KAFKA_CLUSTERS_0_NAME}
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: ${KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS}
+
   postgres:
     image: postgres:15
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 1234
-      POSTGRES_DB: flights
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "15432:5432"
+      - "${POSTGRES_EXTERNAL_PORT}:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ${PGDATA_VOLUME}:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d flights"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -21,54 +61,21 @@ services:
   redis:
     image: redis:7
     ports:
-      - "6379:6379"
-
-  rabbitmq:
-    image: rabbitmq:3.13-management
-    container_name: rabbitmq
-    ports:
-      - "5672:5672"   
-      - "15672:15672" 
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
+      - "${REDIS_EXTERNAL_PORT}:6379"
 
   flights:
-
     build: 
       context: ./backend       
       dockerfile: Flights/Dockerfile
     ports:
-      - "8082:8080"
+      - "${FLIGHTS_PORT}:8080"
     environment:
-      # PostgreSQL
-      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=flights;Username=postgres;Password=1234"
-      # Redis
-      ConnectionStrings__Redis: "redis:6379"
-      # RabbitMQ
-      RabbitMq__HostName: "rabbitmq"
-      RabbitMq__Port: "5672"
-      RabbitMq__UserName: "guest"
-      RabbitMq__Password: "guest"
-      RabbitMq__ExchangeName: "notifications"
-      RabbitMq__Queues__Mail: "mail-service-queue"
-      RabbitMq__Queues__Pdf: "pdf-generator-queue"
-      RabbitMq__RoutingKeys__EmailRegistration: "email.registration"
-      RabbitMq__RoutingKeys__EmailBooking: "email.booking_confirmed"
-      RabbitMq__RoutingKeys__PdfGenerate: "pdf.generate_ticket"
-      # Encryption
-      Encryption__Key: "MGY7McJ5MLGqLu7F2gptcZwP+8nfD9fBC3kG4VeOAjM="
-      # JWT
-      JwtOptions__PublicKeyPath: "Keys/public_key.pem"
-      JwtOptions__TokenValidityMins: "2000"
+      ConnectionStrings__Postgres: ${FLIGHTS_DATABASE_CONNECTION}
+      ConnectionStrings__Redis: ${FLIGHTS_REDIS_CONNECTION}
+      Encryption__Key: ${ENCRYPTION_KEY}
+      JwtOptions__PublicKeyPath: ${JWT_PUBLIC_KEY_PATH}
+      JwtOptions__TokenValidityMins: ${JWT_TOKEN_VALIDITY_MINS}
+      Kafka__BootstrapServers: ${KAFKA_BOOTSTRAP_SERVERS}
     volumes:
       - ./backend/Flights/Keys:/app/Keys:ro
     depends_on:
@@ -76,7 +83,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-      rabbitmq:                     
+      kafka:                     
         condition: service_healthy
 
   mail:
@@ -84,27 +91,21 @@ services:
       context: ./backend       
       dockerfile: Mail/Dockerfile
     ports:
-      - "8083:8080"
+      - "${MAIL_PORT}:8080"
     volumes:
       - ./backend/Flights/Keys:/app/Keys:ro
     environment:
-      # RabbitMQ
-      RabbitMq__HostName: "rabbitmq"
-      RabbitMq__Port: "5672"
-      RabbitMq__UserName: "guest"
-      RabbitMq__Password: "guest"
-      RabbitMq__ExchangeName: "notifications"
-      RabbitMq__Queues__Mail: "mail-service-queue"
-      RabbitMq__Queues__Pdf: "pdf-generator-queue"
-      RabbitMq__RoutingKeys__EmailRegistration: "email.registration"
-      RabbitMq__RoutingKeys__EmailBooking: "email.booking_confirmed"
-      RabbitMq__RoutingKeys__PdfGenerate: "pdf.generate_ticket"
+      Minio__Endpoint: ${MINIO_ENDPOINT}
+      Minio__AccessKey: ${MINIO_ACCESS_KEY}
+      Minio__SecretKey: ${MINIO_SECRET_KEY}
+      Minio__BucketName: ${MINIO_BUCKET_NAME}
+      Minio__Secure: ${MINIO_SECURE}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_started
-      rabbitmq:                      
+      kafka:                     
         condition: service_healthy
 
   identity:
@@ -112,25 +113,14 @@ services:
       context: ./backend       
       dockerfile: Identity/Dockerfile
     ports:
-      - "8081:8080"
+      - "${IDENTITY_PORT}:8080"
     environment:
-      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=identity;Username=postgres;Password=1234"
-      JwtOptions__PublicKeyPath: "Keys/public_key.pem"
-      JwtOptions__PrivateKeyPath: "Keys/private_key.pem"
-      JwtOptions__TokenValidityMins: "2000"
-      JwtOptions__RefreshTokenValidityMins: "2000"
-
-      # RabbitMQ
-      RabbitMq__HostName: "rabbitmq"
-      RabbitMq__Port: "5672"
-      RabbitMq__UserName: "guest"
-      RabbitMq__Password: "guest"
-      RabbitMq__ExchangeName: "notifications"
-      RabbitMq__Queues__Mail: "mail-service-queue"
-      RabbitMq__Queues__Pdf: "pdf-generator-queue"
-      RabbitMq__RoutingKeys__EmailRegistration: "email.registration"
-      RabbitMq__RoutingKeys__EmailBooking: "email.booking_confirmed"
-      RabbitMq__RoutingKeys__PdfGenerate: "pdf.generate_ticket"
+      ConnectionStrings__Postgres: ${IDENTITY_DATABASE_CONNECTION}
+      JwtOptions__PublicKeyPath: ${JWT_PUBLIC_KEY_PATH}
+      JwtOptions__PrivateKeyPath: ${JWT_PRIVATE_KEY_PATH}
+      JwtOptions__TokenValidityMins: ${JWT_TOKEN_VALIDITY_MINS}
+      JwtOptions__RefreshTokenValidityMins: ${JWT_REFRESH_TOKEN_VALIDITY_MINS}
+      Kafka__BootstrapServers: ${KAFKA_BOOTSTRAP_SERVERS}
     volumes:
       - ./backend/Identity/Keys:/app/Keys:rw
     depends_on:
@@ -138,49 +128,54 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-      rabbitmq:
+      kafka:                     
         condition: service_healthy
 
-  ngrok:
-    image: ngrok/ngrok:latest
-    container_name: ngrok
-    command:
-      - "http"
-      - "http://flights:8080"
-      - "--authtoken=33ThgsAijz1V5tGKN24iuEp4Phg_3YLVpxNQrhZmf7hqQzk4a"
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
-      - "4040:4040"
-    restart: unless-stopped
+      - "${FRONTEND_EXTERNAL_PORT}:80"
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+    depends_on:
+      - identity
 
   minio:
     image: minio/minio:latest
     container_name: minio
-    command: server /data --console-address ":9001"
+    command: server /data --console-address ":${MINIO_CONSOLE_PORT}"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_EXTERNAL_API_PORT}:9000"
+      - "${MINIO_EXTERNAL_CONSOLE_PORT}:9001"
     volumes:
-      - minio_data:/data
+      - ${MINIO_DATA_VOLUME}:/data
 
   boardingpasses:
     build:
       context: ./backend
       dockerfile: BoardingPasses/Dockerfile
     ports:
-      - "8084:8080"
+      - "${BOARDING_PASSES_PORT}:8080"
     environment:
-      Minio__Endpoint: "minio:9000"
-      Minio__AccessKey: "minioadmin"
-      Minio__SecretKey: "minioadmin"
-      Minio__BucketName: "boarding-passes"
-      Minio__Secure: "false"
+      Minio__Endpoint: ${MINIO_ENDPOINT}
+      Minio__AccessKey: ${MINIO_ACCESS_KEY}
+      Minio__SecretKey: ${MINIO_SECRET_KEY}
+      Minio__BucketName: ${MINIO_BUCKET_NAME}
+      Minio__Secure: ${MINIO_SECURE}
+      Kafka__BootstrapServers: ${KAFKA_BOOTSTRAP_SERVERS}
     depends_on:
       - minio
+      - kafka
 
 volumes:
   pgdata:
-  rabbitmq_data:
+    driver: local
+  kafka_data:
+    driver: local
   minio_data:
+    driver: local

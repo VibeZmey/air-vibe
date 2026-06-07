@@ -53,8 +53,8 @@ public class OutboxWorker : BackgroundService
         {
             try
             {
-                var evt = EventSerializer.Deserialize(msg.Type, msg.Data);
-                await mediator.Publish(evt, ct);
+                //var evt = EventSerializer.Deserialize(msg.Type, msg.Data);
+                //await mediator.Publish(evt, ct);
                 msg.Processed = true;
             }
             catch (Exception ex)

@@ -21,7 +21,7 @@ public class FlightRepository : IFlightRepository
         _context = context;
     }
     
-    public async Task<IReadOnlyCollection<GetFlightsByFilterDto>> GetFlightsByFilter(SearchFlightsQuery query, CancellationToken ct = default)
+    public async Task<IReadOnlyCollection<GetFlightsByFilterDto>> GetFlightsByFilterAsync(SearchFlightsQuery query, CancellationToken ct = default)
     {
         var originAirports = await _cacheService.GetAsync<List<int>>
             (CacheKeys.AirportsByCityKey(query.OriginCity), ct);
@@ -69,7 +69,7 @@ public class FlightRepository : IFlightRepository
         
         var outboundQuery = baseQuery
             .Where(f =>
-                f.DepartureTime.Date == query.DepartureDate.Date)
+                f.DepartureTime.AddHours(f.FromAirport.TimezoneOffset).Date == query.DepartureDate.Date)
             .Where(f =>
                 (f.TotalSeats - f.BookedSeats) >= totalPassengers)
             .Where(f =>
@@ -79,11 +79,11 @@ public class FlightRepository : IFlightRepository
         if (query.DepartureHourFrom.HasValue)
             outboundQuery = outboundQuery
                 .Where(f => 
-                    f.DepartureTime.Hour >= query.DepartureHourFrom.Value);
+                    f.DepartureTime.AddHours(f.FromAirport.TimezoneOffset).Hour >= query.DepartureHourFrom.Value);
         if (query.DepartureHourTo.HasValue)
             outboundQuery = outboundQuery
                 .Where(f => 
-                    f.DepartureTime.Hour <= query.DepartureHourTo.Value);
+                    f.DepartureTime.AddHours(f.ToAirport.TimezoneOffset).Hour <= query.DepartureHourTo.Value);
 
         if (query.MaxTotalPrice.HasValue)
         {
@@ -112,7 +112,7 @@ public class FlightRepository : IFlightRepository
                 .Include(f => f.Airplane.Airline);
 
             returnFlights = await returnBaseQuery
-                .Where(f => f.DepartureTime.Date == query.ReturnDate.Value.Date)
+                .Where(f => f.DepartureTime.AddHours(f.FromAirport.TimezoneOffset).Date == query.ReturnDate.Value.Date)
                 .Take(query.PageSize * 3)
                 .ToListAsync(ct);
         }
@@ -217,13 +217,19 @@ public class FlightRepository : IFlightRepository
             .ToListAsync(ct);
     }
 
-    public async Task<IReadOnlyCollection<Guid>?> GetUsersIdsByFlightId(Guid id, CancellationToken ct = default)
+    public async Task<IReadOnlyCollection<Guid>?> GetUsersIdsByFlightIdAsync(Guid id, CancellationToken ct = default)
     {
         var flight = await _context.Flights
             .Include(f => f.Bookings)
             .FirstOrDefaultAsync(f => f.Id == id, ct);
         
         return flight?.Bookings.Select(b => b.UserId).ToList();
+    }
+
+    public async Task<Flight?> GetByIdAsync(Guid flightId, CancellationToken ct = default)
+    {
+        return await _context.Flights
+            .FirstOrDefaultAsync(f => f.Id == flightId, ct);
     }
 
     public async Task<Flight?> GetByIdWithDetailsAsync(Guid flightId, CancellationToken ct = default)

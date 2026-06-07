@@ -1,13 +1,12 @@
 ﻿<div>
   <p style="margin:0 0 24px; font-size:18px; font-weight:600; color:#111827;" class="text-main">
-    Подтвердите вход в аккаунт 🔐
+    Confirm your account login 🔐
   </p>
 
   <p style="margin:0 0 32px; color:#4B5563;" class="text-muted">
-    Здравствуйте, <strong style="color:#111827;" class="text-main">{{Login}}</strong>. Мы зафиксировали попытку входа с нового устройства. Если это вы — нажмите кнопку ниже.
+    Welcome, <strong style="color:#111827;" class="text-main">{{Login}}</strong>. We have recorded an attempt to log in from a new device. If it's you, click the button below.
   </p>
 
-  <!-- Кнопка (зелёный акцент для доверия) -->
   <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 32px;">
     <tr>
       <td align="center">
@@ -15,7 +14,7 @@
           <tr>
             <td align="center" style="border-radius:12px; background: linear-gradient(135deg, #059669 0%, #10B981 100%);">
               <a href="{{ConfirmationLink}}" style="display:inline-block; padding:16px 40px; font-size:16px; font-weight:600; color:#FFFFFF; text-decoration:none; border-radius:12px;">
-                Да, это я
+                Yes, it's me.
               </a>
             </td>
           </tr>
@@ -30,7 +29,7 @@
         <strong>📍 Request Details:</strong><br>
         • Time: {{CreatedAt}}<br>
         • Account: {{Login}}<br>
-        • Ссылка действительна <strong>15 min</strong>
+        • The link is valid for <strong>15 min</strong>
       </td>
     </tr>
   </table>

@@ -1,8 +1,13 @@
-using GreenPipes;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Mail.Consumers;
+using Mail.Handlers;
+using Mail.Interfaces;
 using Mail.Options;
 using Mail.Services;
-using MassTransit;
+using Microsoft.Extensions.Options;
+using Minio;
+using SharedContracts.Messages;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,36 +19,33 @@ builder.Services.Configure<EmailSettings>(
 
 builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddSingleton<IEmailTemplateService, EmailTemplateService>();
+builder.Services.AddSingleton<IMinioFileService, MinioFileService>();
 
-builder.Services.AddScoped<UserRegisteredConsumer>();
-builder.Services.AddScoped<UserLoggedinConsumer>();
-builder.Services.AddScoped<OrderConfirmedConsumer>();
-
-var serviceProvider = builder.Services.BuildServiceProvider();
-var busControl = Bus.Factory.CreateUsingRabbitMq(cfg =>
-{ 
-        var section = builder.Configuration.GetSection("RabbitMq");
-        cfg.Host(
-            section["HostName"] ?? "rabbitmq",
-            section["VirtualHost"] ?? "/",
-            h =>
-            {
-                h.Username(section["UserName"] ?? "guest");
-                h.Password(section["Password"] ?? "guest");
-            });
+builder.Services.Configure<MinioOptions>(builder.Configuration.GetSection("Minio"));
+builder.Services.AddSingleton<IMinioClient>(sp =>
+{
+    var settings = sp.GetRequiredService<IOptions<MinioOptions>>().Value;
     
-        cfg.ReceiveEndpoint("mail-service-queue", e =>
-        {
-            e.Consumer(() => serviceProvider.GetRequiredService<UserRegisteredConsumer>());
-            e.Consumer(() => serviceProvider.GetRequiredService<UserLoggedinConsumer>());
-            e.Consumer(() => serviceProvider.GetRequiredService<OrderConfirmedConsumer>());
-            
-            e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
-        });
+    return new MinioClient()
+        .WithEndpoint(settings.Endpoint)
+        .WithCredentials(settings.AccessKey, settings.SecretKey)
+        .WithSSL(settings.Secure)
+        .Build();
 });
-await busControl.StartAsync(new CancellationToken());
 
-builder.Logging.AddFilter("MassTransit", LogLevel.Debug);
+builder.Services.AddSingleton(new JsonSerializerOptions
+{
+    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+});
+
+builder.Services.AddSingleton<IConsumerHandler<UserLoggedin>, UserLoggedinHandler>();
+builder.Services.AddSingleton<IConsumerHandler<UserRegistered>, UserRegisteredHandler>();
+builder.Services.AddSingleton<IConsumerHandler<BoardingPassCreated>, BoardingPassCreatedHandler>();
+
+builder.Services.AddHostedService<UserLoggedinConsumer>();
+builder.Services.AddHostedService<UserRegisteredConsumer>();
+builder.Services.AddHostedService<BoardingPassCreatedConsumer>();
 
 var app = builder.Build();
 

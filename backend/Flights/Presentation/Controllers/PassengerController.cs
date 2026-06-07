@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Flights.Presentation.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("passengers")]
 public class PassengerController : ControllerBase
 {
@@ -34,7 +35,7 @@ public class PassengerController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin, User, Supporter")]
+    [Authorize(Roles = "Admin, User")]
     public async Task<IActionResult> DeletePassenger([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var command = new DeletePassengerCommand()
@@ -46,9 +47,9 @@ public class PassengerController : ControllerBase
     }
     
     [HttpPost]
+    [Authorize(Roles = "Admin, User")]
     public async Task<ActionResult<CreatePassengerDto>> CreatePassenger([FromBody] CreatePassengerCommand passenger)
     {
-        
         var res = await _mediator.Send(passenger);
         return Ok(res);
     }

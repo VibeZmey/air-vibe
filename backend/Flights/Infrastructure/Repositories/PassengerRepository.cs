@@ -84,8 +84,6 @@ public class PassengerRepository : IPassengerRepository
                     FirstName = d.FirstName,
                     LastName = d.LastName,
                     MiddleName = d.MiddleName,
-                    Number = d.Number,
-                    Series = d.Series,
                     Type = d.Type, 
                     ValidityPeriod = d.ValidityPeriod
                 }).ToList()

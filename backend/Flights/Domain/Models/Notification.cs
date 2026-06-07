@@ -1,4 +1,4 @@
-﻿using Flights.Domain.Events;
+﻿using Flights.Domain.Dto;
 
 namespace Flights.Domain.Models;
 
@@ -11,7 +11,21 @@ public class Notification
     public bool IsRead { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public static Notification CreateCheckInOpened(CheckInOpenedEvent notification, Guid userId)
+    public void MarkAsRead() => IsRead = true;
+
+    public static NotificationDto ToDto(Notification notification)
+    {
+        return new NotificationDto()
+        {
+            Id = notification.Id,
+            Type = notification.Type,
+            Payload = notification.Payload,
+            IsRead = notification.IsRead,
+            CreatedAt = notification.CreatedAt
+        };
+    }
+
+    public static Notification CreateCheckInOpened(Flight flight, Guid userId)
     {
         return new Notification()
         {
@@ -20,25 +34,25 @@ public class Notification
             Type = NotificationType.CheckInOpened,
             Payload = new NotificationPayload()
             {
-                FlightNumber = notification.FlightNumber,
-                DepartureTime = notification.DepartureTime,
-                StartTime = notification.StartTime,
-                EndTime = notification.EndTime,
-                Status = notification.NewStatus
+                FlightNumber = flight.Number,
+                DepartureTime = flight.DepartureTime,
+                StartTime = flight.DepartureTime.AddHours(-24),
+                EndTime = flight.DepartureTime.AddMinutes(-30),
+                Status = flight.Status,
             }
         };
     }
-    public static Notification CreateOrderConfirmed(OrderConfirmedEvent notification)
+    public static Notification CreateOrderConfirmed(Order order)
     {
         return new Notification()
         {
             Id = Guid.NewGuid(),
-            UserId = notification.UserId,
+            UserId = order.UserId,
             Type = NotificationType.OrderConfirmed,
             Payload = new NotificationPayload()
             {
-                FlightNumber = notification.FlightNumber,
-                TotalPrice = notification.TotalPrice,
+                OrderId = order.Id,
+                TotalPrice = order.TotalPrice
             }
         };
     }
@@ -46,7 +60,6 @@ public class Notification
 
 public record NotificationPayload
 {
-    // Для рейсов
     public string? FlightNumber { get; set; }
     public DateTime? DepartureTime { get; set; }
     public DateTime? ArrivalTime { get; set; }
@@ -54,24 +67,15 @@ public record NotificationPayload
     public string? CityFrom { get; set; }
     public string? CityTo { get; set; }
     public FlightStatus Status { get; set; }
-    
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
-    // Для бронирований
-    public Guid? BookingId { get; set; }
+    public Guid? OrderId { get; set; }
     public string? BookingReference { get; set; }
-    
     public string? PassengerName { get; set; }
     public string? PassengerEmail { get; set; }
-    
-    // Для оплаты
     public decimal? TotalPrice { get; set; }
     public string? Currency { get; set; }
-    
-    // Для напоминаний
     public TimeSpan? HoursBefore { get; set; }
-    
-    // Общие
     public string? Title { get; set; }
     public string? Message { get; set; }
 }
@@ -81,24 +85,6 @@ public enum NotificationType
     OrderConfirmed,
     OrderCancelled,
     OrderCreated,
-    
-    BookingConfirmed,       
-    BookingCancelled,        
-    BookingExpired,           
-    
+    OrderExpired,
     CheckInOpened,         
-    BoardingStarted,      
-    
-    FlightDelayed,        
-    FlightCancelled,        
-    FlightDeparted,            
-    FlightArrived,           
-    
-    FlightReminder24h,    
-    FlightReminder3h,       
-    FlightReminder1h,       
-    
-    GeneralAnnouncement,     
-    SystemMaintenance,       
-    FeedbackRequest       
 }

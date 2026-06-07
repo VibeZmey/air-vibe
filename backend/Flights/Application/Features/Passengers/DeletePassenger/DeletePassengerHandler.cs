@@ -23,10 +23,6 @@ public class DeletePassengerHandler : IRequestHandler<DeletePassengerCommand, Un
             .GetByIdWithDetailsAsync(request.PassengerId, cancellationToken);
         if (passenger is null)
             throw new ApplicationException("Passenger not found");
-        
-        if(passenger.Bookings.Any(b => 
-               b.Status is BookingStatus.Pending or BookingStatus.Confirmed))
-            throw new ApplicationException("Passenger has unfinished bookings");
 
         if (!passenger.Bookings.Any())
             _passengerRepo.Delete(passenger);
