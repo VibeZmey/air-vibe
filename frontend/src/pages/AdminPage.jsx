@@ -13,15 +13,15 @@ const TABS = {
 const ORDER_STATUS = {
   0: 'Pending',
   1: 'Confirmed',
-  2: 'Expired',
-  3: 'Cancelled',
+  3: 'Expired',
+  2: 'Cancelled',
 };
 
 const ORDER_STATUS_ENUM = {
   Pending: 0,
   Confirmed: 1,
-  Expired: 2,
-  Cancelled: 3,
+  Expired: 3,
+  Cancelled: 2,
 };
 
 function OrdersTab() {

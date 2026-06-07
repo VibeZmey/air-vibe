@@ -5,7 +5,6 @@ import { BrowserRouter } from 'react-router-dom';
 import { SearchPage } from '../pages/SearchPage';
 import { apiClient } from '../api/client';
 
-// Mock components and modules
 jest.mock('../api/client');
 jest.mock('../components/layout/AppShell', () => ({
   AppShell: ({ children, title, subtitle }) => (
@@ -111,7 +110,7 @@ describe('SearchPage', () => {
     const passengerButton = screen.getByRole('button', {
       name: /1 passenger/i,
     });
-    
+
     expect(passengerButton).toBeInTheDocument();
   });
 

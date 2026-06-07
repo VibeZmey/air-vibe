@@ -318,6 +318,26 @@
   font-weight: 500;
 }
 
+.passengerNameBlock {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+}
+
+.passengerIcon {
+  width: 32px;
+  height: 32px;
+  color: #7c3aed;
+  flex-shrink: 0;
+}
+
+.noDocuments {
+  color: #f59e0b;
+  font-weight: 600;
+  font-size: 12px;
+}
+
 .expandBtn {
   background: transparent;
   border: 1px solid #d1d5db;

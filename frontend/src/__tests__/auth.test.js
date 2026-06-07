@@ -2,7 +2,6 @@
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 
-// Mock apiClient
 jest.mock('../api/client', () => ({
   apiClient: {
     post: jest.fn(),
@@ -21,7 +20,7 @@ describe('Auth API', () => {
     it('should generate login from email', () => {
       const email = 'john.doe@example.com';
       const login = buildLoginFromEmail(email);
-      
+
       expect(login).toMatch(/^john-doe-/);
       expect(login.length).toBeLessThanOrEqual(32);
     });
@@ -29,14 +28,14 @@ describe('Auth API', () => {
     it('should handle special characters', () => {
       const email = 'john+doe@example.com';
       const login = buildLoginFromEmail(email);
-      
+
       expect(login).toMatch(/^[a-z0-9-]+$/);
     });
 
     it('should use default login for empty email', () => {
       const email = '@example.com';
       const login = buildLoginFromEmail(email);
-      
+
       expect(login).toMatch(/^user-/);
     });
   });

@@ -2,7 +2,6 @@
 import { apiClient, setAuthToken } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 
-// Mock axios
 jest.mock('axios');
 
 describe('API Client', () => {

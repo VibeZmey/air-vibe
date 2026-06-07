@@ -50,13 +50,9 @@ export async function refreshStoredSession() {
 }
 
 apiClient.interceptors.request.use((request) => {
-  // Convert any date-like values in params or body to UTC ISO strings
   function isDateString(value) {
     if (typeof value !== 'string') return false;
-    // YYYY-MM-DD
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return true;
-    // ISO-like strings or other date parsable strings
-    // Date.parse returns NaN for invalid
     return !Number.isNaN(Date.parse(value));
   }
   function convertValue(v) {
@@ -66,24 +62,6 @@ apiClient.interceptors.request.use((request) => {
     }
     return v;
   }
-
-  // function convertValue(v) {
-  //   console.log(`${v} convert value`);
-  //   if (v instanceof Date) return v.toISOString();
-  //   if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
-  //     // Treat date-only values as UTC midnight
-  //     console.log(`${v}T00:00:00Z converted value`);
-  //     return `${v}T00:00:00Z`;
-  //   }
-  //   if (typeof v === 'string' && !Number.isNaN(Date.parse(v))) {
-  //     const d = new Date(v);
-  //     console.log(d);
-  //     console.log(`${d} converted date`);
-  //     return d.toISOString();
-  //   }
-  //   console.log(`${v} no convert value`);
-  //   return v;
-  // }
 
   function convertDatesRecursively(obj) {
     if (obj == null) return obj;
@@ -96,7 +74,6 @@ apiClient.interceptors.request.use((request) => {
       }
       return res;
     }
-    // primitive
     return convertValue(obj);
   }
 
@@ -104,22 +81,17 @@ apiClient.interceptors.request.use((request) => {
     try {
       request.params = convertDatesRecursively(request.params);
     } catch (e) {
-      // ignore conversion errors
     }
   }
   if (request.data) {
     try {
       request.data = convertDatesRecursively(request.data);
     } catch (e) {
-      // ignore conversion errors
     }
   }
 
-  // If caller embedded query params directly into the URL (e.g. "/flights?DepartureDate=2026-05-12"),
-  // try to normalize any date-like values to UTC ISO strings as well.
   if (!request.params && request.url && request.url.includes('?')) {
     try {
-      // Use base URL to correctly parse relative URLs
       const parsed = new URL(request.url, API_BASE_URL);
       const search = parsed.searchParams;
       let changed = false;
@@ -137,11 +109,9 @@ apiClient.interceptors.request.use((request) => {
         }
       }
       if (changed) {
-        // rebuild request.url preserving pathname and new query
         request.url = parsed.pathname + (parsed.search ? `?${parsed.searchParams.toString()}` : '');
       }
     } catch (e) {
-      // ignore URL parsing errors
     }
   }
 

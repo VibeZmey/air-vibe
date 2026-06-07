@@ -14,7 +14,7 @@ function decodeJWT(token) {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
-    
+
     const payload = parts[1];
     const decoded = JSON.parse(atob(payload));
     return decoded;
@@ -64,7 +64,6 @@ export async function confirmEmail(token) {
     refreshToken: data.refreshToken,
   });
 
-  // Extract role from JWT and set user
   const jwtPayload = decodeJWT(data.accessToken);
   if (jwtPayload) {
     useAuthStore.getState().setUser({
@@ -80,14 +79,13 @@ export async function confirmEmail(token) {
 export async function getMe() {
   const response = await apiClient.get('/users/me');
   const userData = response.data;
-  
-  // Add role from JWT token
+
   const state = useAuthStore.getState();
   const jwtPayload = decodeJWT(state.accessToken);
   if (jwtPayload && jwtPayload.role) {
     userData.role = jwtPayload.role;
   }
-  
+
   useAuthStore.getState().setUser(userData);
   return userData;
 }

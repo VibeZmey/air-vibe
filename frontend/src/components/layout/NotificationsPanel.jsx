@@ -126,10 +126,9 @@ export function NotificationsPanel() {
     }
   }, [isOpen]);
 
-  // Check for unread notifications on mount and periodically
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // Check every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -161,12 +160,10 @@ export function NotificationsPanel() {
     const type = notification.type || notification.Type;
     const payload = notification.Payload || notification.payload;
 
-    // Mark as read
     if (!isRead) {
       await markAsRead(notifId);
     }
 
-    // Navigate based on notification type
     switch (type) {
       case 0:
       case 1:
@@ -176,13 +173,11 @@ export function NotificationsPanel() {
       case 'OrderCancelled':
       case 'OrderCreated':
       case 'OrderExpired':
-        // Navigate to profile with Orders tab
         setIsOpen(false);
         navigate(ROUTES.profile, { state: { tab: 'orders' } });
         break;
       case 4:
       case 'CheckInOpened':
-        // Navigate to profile with Orders tab (where user can see flight details)
         setIsOpen(false);
         navigate(ROUTES.profile, { state: { tab: 'orders' } });
         break;

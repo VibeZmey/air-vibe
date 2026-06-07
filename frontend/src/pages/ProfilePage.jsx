@@ -53,8 +53,8 @@ const GENDER_NAMES = {
 const ORDER_STATUS = {
   0: 'Pending',
   1: 'Confirmed',
-  2: 'Completed',
   3: 'Cancelled',
+  2: 'Expired',
 };
 
 function PersonalTab({ user, onUserUpdate }) {
@@ -262,40 +262,67 @@ function PassengersTab() {
      }
    }
 
-    async function addDocument(passengerId) {
-      setAddingDoc(true);
-      try {
-        await apiClient.post('/documents', {
-          passengerId: passengerId,
-          type: DOCUMENT_TYPE[docData.type],
-          firstName: docData.firstName,
-          middleName: docData.middleName,
-          lastName: docData.lastName,
-          gender: GENDER[docData.gender],
-          dateOfBirth: docData.dateOfBirth,
-          validityPeriod: docData.validityPeriod,
-          number: docData.number,
-          series: docData.series,
-        });
-       setShowAddDocForm(null);
-       setDocData({
-         type: 'Passport',
-         gender: 'Male',
-         firstName: '',
-         middleName: '',
-         lastName: '',
-         number: '',
-         series: '',
-         dateOfBirth: '',
-         validityPeriod: '',
-       });
-       await fetchPassengers();
-     } catch (err) {
-       setError('Failed to add document');
-     } finally {
-       setAddingDoc(false);
-     }
-   }
+     async function addDocument(passengerId) {
+       setAddingDoc(true);
+       setError('');
+       
+       try {
+         // First validate the document
+         const validationPayload = {
+           Type: DOCUMENT_TYPE[docData.type] || 0,
+           FirstName: docData.firstName,
+           MiddleName: docData.middleName || null,
+           LastName: docData.lastName,
+           Number: docData.number,
+           Series: docData.series || null,
+           Gender: GENDER[docData.gender] || 0,
+           DateOfBirth: docData.dateOfBirth,
+           ValidityPeriod: docData.validityPeriod || null,
+           UserId: user.id,
+         };
+
+         try {
+           await apiClient.post('/documents/validate', validationPayload);
+         } catch (validationErr) {
+           throw new Error(
+             validationErr.response?.data?.message || 'Document validation failed'
+           );
+         }
+
+         // Validation passed, create document
+         await apiClient.post('/documents', {
+           passengerId: passengerId,
+           type: DOCUMENT_TYPE[docData.type],
+           firstName: docData.firstName,
+           middleName: docData.middleName,
+           lastName: docData.lastName,
+           gender: GENDER[docData.gender],
+           dateOfBirth: docData.dateOfBirth,
+           validityPeriod: docData.validityPeriod,
+           number: docData.number,
+           series: docData.series,
+         });
+
+         // Only close form on success
+         setShowAddDocForm(null);
+         setDocData({
+           type: 'Passport',
+           gender: 'Male',
+           firstName: '',
+           middleName: '',
+           lastName: '',
+           number: '',
+           series: '',
+           dateOfBirth: '',
+           validityPeriod: '',
+         });
+        await fetchPassengers();
+      } catch (err) {
+        setError(err.message || 'Failed to add document');
+      } finally {
+        setAddingDoc(false);
+      }
+    }
 
   return (
     <div className={styles.tab}>
@@ -338,26 +365,36 @@ function PassengersTab() {
                ? `${firstDoc.firstName || firstDoc.FirstName} ${firstDoc.lastName || firstDoc.LastName}`
                : passengerType;
              
-             return (
-             <div key={passengerId} className={styles.passengerCard}>
-               <div className={styles.passengerHeader}>
-                 <div>
-                   <h4>{passengerName}</h4>
-                   <small>{passengerType}</small>
-                   <button
-                     className={styles.expandBtn}
-                     onClick={() => setExpandedId(expandedId === passengerId ? null : passengerId)}
-                   >
-                     {expandedId === passengerId ? 'Hide Documents' : 'View Documents'}
-                   </button>
-                 </div>
-                 <button
-                   className={styles.deleteBtn}
-                   onClick={() => deletePassenger(passengerId)}
-                 >
-                   Delete
-                 </button>
-               </div>
+              return (
+              <div key={passengerId} className={styles.passengerCard}>
+                <div className={styles.passengerHeader}>
+                  <div>
+                    <div className={styles.passengerNameBlock}>
+                      <svg className={styles.passengerIcon} viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                      </svg>
+                      <div>
+                        <h4>
+                          {passengerName}
+                        </h4>
+                        {!firstDoc && <small className={styles.noDocuments}>No documents</small>}
+                      </div>
+                    </div>
+                    <small>{passengerType}</small>
+                    <button
+                      className={styles.expandBtn}
+                      onClick={() => setExpandedId(expandedId === passengerId ? null : passengerId)}
+                    >
+                      {expandedId === passengerId ? 'Hide Documents' : 'View Documents'}
+                    </button>
+                  </div>
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={() => deletePassenger(passengerId)}
+                  >
+                    Delete
+                  </button>
+                </div>
 
                {expandedId === passengerId && (
                  <div className={styles.documentsSection}>
@@ -551,8 +588,8 @@ function OrdersTab() {
     const statusMap = {
       0: styles.orderStatusPending,
       1: styles.orderStatusConfirmed,
-      2: styles.orderStatusExpired,
-      3: styles.orderStatusCancelled,
+      3: styles.orderStatusExpired,
+      2: styles.orderStatusCancelled,
       Pending: styles.orderStatusPending,
       Confirmed: styles.orderStatusConfirmed,
       Expired: styles.orderStatusExpired,
@@ -565,8 +602,8 @@ function OrdersTab() {
     const statusMap = {
       0: 'Pending',
       1: 'Confirmed',
-      2: 'Expired',
-      3: 'Cancelled',
+      3: 'Expired',
+      2: 'Cancelled',
       Pending: 'Pending',
       Confirmed: 'Confirmed',
       Expired: 'Expired',

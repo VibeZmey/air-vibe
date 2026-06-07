@@ -1,6 +1,5 @@
 ﻿import { useAuthStore } from '../store/authStore';
 
-// Mock storage functions
 jest.mock('../utils/storage', () => ({
   writeAuthStorage: jest.fn(),
   readAuthStorage: jest.fn(() => ({

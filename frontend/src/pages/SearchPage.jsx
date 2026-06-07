@@ -9,7 +9,6 @@ import { useAuthStore } from '../store/authStore';
 
 const PAGE_SIZE = 6;
 
-// Enum mappings for sorting
 const SORT_FIELD_ENUM = {
   Price: 0,
   DepartureTime: 1,
@@ -474,60 +473,87 @@ export function SearchPage() {
     }
   }
 
-  async function handleFlightClick(flight) {
-    const isAuthenticated = useAuthStore.getState().accessToken;
+   async function handleFlightClick(result) {
+     const isAuthenticated = useAuthStore.getState().accessToken;
 
-    if (!isAuthenticated) {
-      setError('Please sign in or register to book a flight');
-      // Redirect to auth page after a delay
-      setTimeout(() => {
-        navigate('/auth');
-      }, 2000);
-      return;
-    }
+     if (!isAuthenticated) {
+       setError('Please sign in or register to book a flight');
+       // Redirect to auth page after a delay
+       setTimeout(() => {
+         navigate('/auth');
+       }, 2000);
+       return;
+     }
 
-    const flightId = flight.id || flight.Id;
-    setBookingLoading(true);
-    setError('');
+     const outboundFlight = result.outbound || result.Outbound;
+     const returnFlight = result.return || result.Return;
+     
+     if (!outboundFlight) {
+       setError('Invalid flight selected. Please try again.');
+       return;
+     }
 
-    try {
-      const response = await apiClient.get(`/flights/${flightId}`);
-      const fullFlight = response.data;
+     const flightId = outboundFlight.id || outboundFlight.Id;
+     setBookingLoading(true);
+     setError('');
 
-      const status = fullFlight.status;
-      const FLIGHT_STATUS = {
-        Scheduled: 0,
-        CheckIn: 1,
-        Boarding: 2,
-        Departed: 3,
-        Arrived: 4,
-        Cancelled: 5,
-        Delayed: 6,
-      };
+     try {
+       const response = await apiClient.get(`/flights/${flightId}`);
+       const fullFlight = response.data;
 
-      if (status !== FLIGHT_STATUS.Scheduled && status !== FLIGHT_STATUS.CheckIn) {
-        setError('This flight is no longer available for booking.');
-        return;
-      }
+       const status = fullFlight.status;
+       const FLIGHT_STATUS = {
+         Scheduled: 0,
+         CheckIn: 1,
+         Boarding: 2,
+         Departed: 3,
+         Arrived: 4,
+         Cancelled: 5,
+         Delayed: 6,
+       };
 
-      // Navigate to booking page with flight data
-      navigate(`/booking/${flightId}`, {
-        state: {
-          flight: fullFlight,
-          passengers: {
-            adults,
-            kids,
-            babies,
-          },
-        },
-      });
-    } catch (err) {
-      setError('Failed to load flight details. Please try again.');
-      console.error(err);
-    } finally {
-      setBookingLoading(false);
-    }
-  }
+       if (status !== FLIGHT_STATUS.Scheduled && status !== FLIGHT_STATUS.CheckIn) {
+         setError('This flight is no longer available for booking.');
+         return;
+       }
+
+       // If there's a return flight, fetch it as well
+       let returnFlightData = null;
+       if (returnFlight) {
+         const returnFlightId = returnFlight.id || returnFlight.Id;
+         try {
+           const returnResponse = await apiClient.get(`/flights/${returnFlightId}`);
+           returnFlightData = returnResponse.data;
+           
+           if (returnFlightData.status !== FLIGHT_STATUS.Scheduled && returnFlightData.status !== FLIGHT_STATUS.CheckIn) {
+             setError('The return flight is no longer available for booking.');
+             return;
+           }
+         } catch (err) {
+           setError('Failed to load return flight details. Please try again.');
+           return;
+         }
+       }
+
+       // Navigate to booking page with flight data (both outbound and return if available)
+       navigate(`/booking/${flightId}`, {
+         state: {
+           flight: fullFlight,
+           returnFlight: returnFlightData,
+           passengers: {
+             adults,
+             kids,
+             babies,
+           },
+         },
+       });
+     } catch (err) {
+       setError('Failed to load flight details. Please try again.');
+       console.error(err);
+     } finally {
+       setBookingLoading(false);
+     }
+   }
 
   function updatePassengerValue(type, value) {
     const next = Number.isFinite(value) ? value : 0;
@@ -894,14 +920,14 @@ export function SearchPage() {
             ) : results.length === 0 ? (
               <div className={styles.hint}>No flights found</div>
              ) : (
-               <ul className={styles.list}>
-                {results.map((result, index) => (
-                  <li
-                    key={index}
-                    className={styles.card}
-                    onClick={() => handleFlightClick(result.outbound || result.Outbound)}
-                    style={{ cursor: 'pointer' }}
-                  >
+                <ul className={styles.list}>
+                 {results.map((result, index) => (
+                   <li
+                     key={index}
+                     className={styles.card}
+                     onClick={() => handleFlightClick(result)}
+                     style={{ cursor: 'pointer' }}
+                   >
                     <div className={styles.cardTop}>
                       <div>
                         <div className={styles.priceLabel}>Total</div>
