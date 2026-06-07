@@ -42,7 +42,8 @@ internal class JwtService : IJwtService
         
         Claim[] claims = [
             new ("userId", user.Id.ToString()),
-            new ("role", role.Name)
+            new ("role", role.Name),
+            new ("email", user.Email)
         ];
 
         var tokenExpires = DateTime.UtcNow.AddMinutes(_options.TokenValidityMins);
@@ -59,7 +60,7 @@ internal class JwtService : IJwtService
         
         var res = new JwtResponse()
         {
-            Login = user.Login,
+            UserId = user.Id,
             AccessToken = accessToken,
             ExpiresIn = (int)tokenExpires.Subtract(DateTime.UtcNow).TotalSeconds,
             RefreshToken = await GenerateRefresh(user.Id)

@@ -1,15 +1,14 @@
-﻿using System.Text.Json.Serialization;
-using Flights.Domain.Dto;
+﻿using Flights.Domain.Dto;
 
 namespace Flights.Domain.Models;
 
 public class Flight
 {
     public Guid Id { get; set; }
+    public string Number { get; set; } = string.Empty;
     public int DurationMins { get; set; }
     public DateTime DepartureTime { get; set; }
     public DateTime ArrivalTime { get; set; }
-    
     public int TotalSeats { get; set; }
     public int BookedSeats { get; set; } = 0;
     public int BusinessSeats { get; set; }
@@ -18,19 +17,45 @@ public class Flight
     public decimal LuggagePrice { get; set; }
     public decimal BusinessPrice { get; set; }
     public decimal FoodPrice { get; set; }
-    
     public FlightStatus Status { get; set; }
-    
     public int FromAirportId { get; set; }
     public Airport FromAirport { get; set; }
-    
     public int ToAirportId { get; set; }
     public Airport ToAirport { get; set; }
-    
     public int AirplaneId { get; set; }
     public Airplane Airplane { get; set; }
-    
-    public ICollection<Booking> Bookings { get; set; }
+    public ICollection<Booking> Bookings { get; set; } = [];
+
+    public void ApplyScheduledTransitions(DateTime now)
+    {
+        if (Status == FlightStatus.Scheduled && 
+            now.AddHours(24) >= DepartureTime && now < DepartureTime)
+        {
+            Status = FlightStatus.CheckIn;
+            return;
+        }
+
+        if (Status == FlightStatus.CheckIn &&
+            now.AddMinutes(30) >= DepartureTime && now < DepartureTime)
+        {
+            
+            Status = FlightStatus.Boarding;
+            return;
+        }
+
+        if (Status == FlightStatus.Boarding &&
+            now >= DepartureTime && now < ArrivalTime)
+        {
+            Status = FlightStatus.Departed;
+            return;
+        }
+
+        if (Status == FlightStatus.Departed &&
+            now >= ArrivalTime)
+        {
+            Status = FlightStatus.Arrived;
+        }
+    }
     
     public static FlightDto ToDto(Flight flight)
     {
@@ -54,12 +79,14 @@ public class Flight
                 City = flight.FromAirport.City,
                 CountryName = flight.FromAirport.CountryName,
                 Code = flight.FromAirport.Code,
+                TimezoneOffset = flight.FromAirport.TimezoneOffset
             },
             ToAirport = new AirportDto()
             {
                 City = flight.ToAirport.City,
                 CountryName = flight.ToAirport.CountryName,
                 Code = flight.ToAirport.Code,
+                TimezoneOffset = flight.ToAirport.TimezoneOffset
             },
             Airplane = new AirplaneDto()
             {
@@ -83,7 +110,6 @@ public class Flight
         
         if (Status != FlightStatus.Scheduled && Status != FlightStatus.CheckIn)
             throw new ApplicationException("Cannot add booking when Status is not Scheduled");
-        Console.WriteLine("BEFORE ADD BOOKING");
         Bookings.Add(booking);
     }
     public static FlightForBookingDto ToFlightForBooking(Flight flight)
@@ -100,12 +126,14 @@ public class Flight
                 City = flight.FromAirport.City,
                 CountryName = flight.FromAirport.CountryName,
                 Code = flight.FromAirport.Code,
+                TimezoneOffset = flight.FromAirport.TimezoneOffset
             },
             ToAirport = new AirportDto()
             {
                 City = flight.ToAirport.City,
                 CountryName = flight.ToAirport.CountryName,
                 Code = flight.ToAirport.Code,
+                TimezoneOffset = flight.ToAirport.TimezoneOffset
             },
         };
     }
@@ -126,12 +154,14 @@ public class Flight
                 City = flight.FromAirport.City,
                 CountryName = flight.FromAirport.CountryName,
                 Code = flight.FromAirport.Code,
+                TimezoneOffset = flight.FromAirport.TimezoneOffset
             },
             ToAirport = new AirportDto()
             {
                 City = flight.ToAirport.City,
                 CountryName = flight.ToAirport.CountryName,
                 Code = flight.ToAirport.Code,
+                TimezoneOffset = flight.ToAirport.TimezoneOffset
             },
         };
     }
@@ -143,8 +173,6 @@ public enum FlightStatus
     CheckIn,
     Boarding,
     Departed,
-    InAir,
-    Landed,
     Arrived,
     Cancelled,
     Delayed

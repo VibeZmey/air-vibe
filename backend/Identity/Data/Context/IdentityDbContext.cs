@@ -10,7 +10,7 @@ public class IdentityDbContext(DbContextOptions<IdentityDbContext> options)
     public DbSet<User> Users { get; set; }
     public DbSet<Role> Roles { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
-    
+    public DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; }
     public async Task SeedRolesAsync()
     {
         if (!await Roles.AnyAsync())
@@ -31,6 +31,7 @@ public class IdentityDbContext(DbContextOptions<IdentityDbContext> options)
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new RoleConfiguration());
         modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
+        modelBuilder.ApplyConfiguration(new EmailVerificationTokenConfiguration());
         base.OnModelCreating(modelBuilder);
     }
 }

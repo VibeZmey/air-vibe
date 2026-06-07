@@ -1,11 +1,10 @@
-﻿using Flights.Application.Common;
-using Flights.Application.Common.Interfaces;
-using Flights.Application.Features.Flights.GetFlightsByFilter;
+﻿using Flights.Application.Common.Interfaces;
 using Flights.Domain.Dto;
 using Flights.Domain.Interfaces;
+using Flights.Infrastructure.Common;
 using MediatR;
 
-namespace Flights.Application.Features.Flights;
+namespace Flights.Application.Features.Flights.GetFlightsByFilter;
 
 public class GetFlightsByFilterHandler : 
     IRequestHandler<GetFlightsByFilterQuery, IReadOnlyCollection<GetFlightsByFilterDto>>
@@ -27,10 +26,11 @@ public class GetFlightsByFilterHandler :
         var flights = await _cacheService.GetAsync<IReadOnlyCollection<GetFlightsByFilterDto>>(
             CacheKeys.FlightsByFilterKey(query), 
             cancellationToken);
+        
         if (flights is null)
         {
             
-            flights = await _flightRepo.GetFlightsByFilter(query, cancellationToken);
+            flights = await _flightRepo.GetFlightsByFilterAsync(query, cancellationToken);
             await _cacheService.SetAsync(
                 CacheKeys.FlightsByFilterKey(query), flights, 
                 TimeSpan.FromMinutes(3), cancellationToken);

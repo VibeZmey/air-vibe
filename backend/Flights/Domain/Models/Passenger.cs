@@ -5,9 +5,7 @@ namespace Flights.Domain.Models;
 public class Passenger
 {
     public Guid Id { get; private set; }
-    public string? Email { get; private set; }
-    public string? PhoneNumber { get; private set; }
-    
+    //TODO: сделать так чтобы тип указывал не пользователь а он сам вычислялся
     public PassengerType Type { get; private set; }
     public ICollection<Document> Documents { get; private set; }
     public ICollection<Booking> Bookings { get; private set; }
@@ -33,12 +31,12 @@ public class Passenger
         string? email, 
         string? phoneNumber)
     {
-        Email = email;
-        PhoneNumber = phoneNumber;
+        //TODO: придумать че с этим делать
     }
     
     public static Passenger Create(
         Guid userId,
+        PassengerType type,
         bool isSaved,
         string? email = null,
         string? phoneNumber = null)
@@ -47,11 +45,9 @@ public class Passenger
         return new Passenger
         {
             Id = Guid.NewGuid(),
-            Type = PassengerType.None,
+            Type = type,
             UserId = userId,
-            PhoneNumber = phoneNumber,
-            IsSaved = isSaved,
-            Email = email,
+            IsSaved = isSaved
         };
     }
 }

@@ -75,8 +75,6 @@ public class PassengerRepository : IPassengerRepository
             .Select(p => new PassengerWithDocumentsDto
             {
                 Id = p.Id,
-                Email = p.Email,
-                PhoneNumber = p.Email,
                 Type = p.Type,
                 Documents = p.Documents.Select(d => new DocumentDto
                 {
@@ -86,8 +84,6 @@ public class PassengerRepository : IPassengerRepository
                     FirstName = d.FirstName,
                     LastName = d.LastName,
                     MiddleName = d.MiddleName,
-                    Number = d.Number,
-                    Series = d.Series,
                     Type = d.Type, 
                     ValidityPeriod = d.ValidityPeriod
                 }).ToList()

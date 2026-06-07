@@ -1,0 +1,45 @@
+﻿.field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.label {
+  color: #3f3f46;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.input {
+  border: 1px solid rgba(124, 58, 237, 0.16);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1f2937;
+  font: inherit;
+  padding: 0.95rem 1rem;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.input::placeholder {
+  color: #9ca3af;
+}
+
+.input:focus {
+  border-color: rgba(139, 92, 246, 0.62);
+  box-shadow: 0 0 0 4px rgba(196, 181, 253, 0.34);
+  outline: none;
+}
+
+.invalid {
+  border-color: rgba(239, 68, 68, 0.55);
+}
+
+.hint {
+  min-height: 1.1rem;
+  color: #6b7280;
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+

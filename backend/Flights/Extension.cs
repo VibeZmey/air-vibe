@@ -29,6 +29,15 @@ public static class Extension
                     ClockSkew = TimeSpan.Zero,
                     IssuerSigningKey = new RsaSecurityKey(rsaPublicKey),
                 };
+                
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        context.Token = context.Request.Cookies["cute-cookies"];
+                        return Task.CompletedTask;
+                    }
+                };
             });
         
         services.AddAuthorization();

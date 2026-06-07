@@ -5,10 +5,10 @@ namespace Identity.Data.Models;
 public class User
 {
     public Guid Id { get; set; }
-    public string Login { get; set; }
     [JsonIgnore]
     public string PasswordHash { get; set; }
-    public string? Email { get; set; }
+    public string Email { get; set; }
+    public bool EmailConfirmed { get; set; } = false;
     public string? Country { get; set; }
     public string? Citizenship { get; set; }
     public string? Currency { get; set; }
@@ -21,4 +21,6 @@ public class User
     public DateTime UpdatedAt { get; set; }
     [JsonIgnore]
     public List<RefreshToken> RefreshTokens { get; set; }
+    [JsonIgnore]
+    public List<EmailVerificationToken> EmailVerificationTokens { get; set; }
 }

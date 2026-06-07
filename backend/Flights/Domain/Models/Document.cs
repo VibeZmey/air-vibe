@@ -25,7 +25,7 @@ public class Document
     public Guid UserId { get; private set; }
     private Document() {}
     
-    public static void Validate(Document document)
+    public static bool Validate(Document document)
     {
         
         if (document.Type == DocumentType.Passport)
@@ -70,6 +70,8 @@ public class Document
 
         if (document.ValidityPeriod is not null && document.ValidityPeriod < DateTime.UtcNow)
             throw new DomainException("Document has expired");
+
+        return true;
     }
 
     public static void Update(
@@ -110,7 +112,7 @@ public class Document
     {
         Document result = new Document
         {
-            Id = Guid.Empty,
+            Id = Guid.NewGuid(),
             Series = series,
             Number = number,
             Type = type,

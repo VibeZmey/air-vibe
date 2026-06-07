@@ -13,8 +13,6 @@ public class UpdatePassengerDto
         return new UpdatePassengerDto
         {
             Id = passenger.Id,
-            Email = passenger.Email,
-            PhoneNumber = passenger.PhoneNumber,
         };
     }
 }

@@ -1,12 +1,18 @@
 using System.Security.Cryptography;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Confluent.Kafka;
 using Flights;
 using Flights.Application;
+using Flights.Application.Common.Interfaces;
 using Flights.Domain.Exceptions;
 using Flights.Infrastructure;
 using Flights.Infrastructure.Persistence;
+using Flights.Infrastructure.Services;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
@@ -50,6 +56,29 @@ builder.Services.AddControllers();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 
+
+builder.Services.AddSingleton(new ProducerConfig
+{
+    BootstrapServers = builder.Configuration["Kafka:BootstrapServers"],
+    Acks = Acks.All,
+    EnableIdempotence = true
+});
+
+builder.Services.AddSingleton<IProducer<string, string>>(sp =>
+{
+    var cfg = sp.GetRequiredService<ProducerConfig>();
+    return new ProducerBuilder<string, string>(cfg).Build();
+});
+builder.Services.AddSingleton<IPublisher, Publisher>();
+builder.Services.AddSingleton(new JsonSerializerOptions
+{
+    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+});
+
+builder.Host.UseSerilog((context, services, configuration) =>
+    configuration.ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services));
 
 var app = builder.Build();
 var rsaKey = app.Services.GetRequiredService<RSA>();

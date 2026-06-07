@@ -1,4 +1,8 @@
-﻿using Flights.Domain.Interfaces;
+﻿using Flights.Application.Common.Interfaces;
+using Flights.Domain.Interfaces;
+using Flights.Infrastructure.Common;
+using MediatR;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Flights.Infrastructure.Persistence;
@@ -7,9 +11,13 @@ public class UnitOfWork : IUnitOfWork, IDisposable
 {
     private readonly FlightsDbContext _context;
     private IDbContextTransaction? _transaction;
+    private readonly IMediator _mediator;
 
-    public UnitOfWork(FlightsDbContext context)
+    public UnitOfWork(
+        FlightsDbContext context,
+        IMediator mediator)
     {
+        _mediator = mediator;
         _context = context;
     }
 
